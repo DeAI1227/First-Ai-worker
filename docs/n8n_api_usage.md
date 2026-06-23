@@ -1,4 +1,4 @@
-# n8n API Usage
+﻿# n8n API Usage
 
 This guide shows how n8n should call the FastAPI orchestrator.
 
@@ -108,13 +108,11 @@ Recommended n8n shape:
 
 ```text
 Cron Trigger
-↓
-HTTP Request: POST /pipeline/run
-↓
-IF Node: response.status
-├─ success
-├─ partial_success
-└─ failed
+→ HTTP Request: POST /pipeline/run
+→ IF Node: response.status
+  → success
+  → partial_success
+  → failed
 ```
 
 ## What to inspect when something fails

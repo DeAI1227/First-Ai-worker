@@ -1,55 +1,68 @@
-# n8n Setup Steps
+﻿# n8n Setup Steps
 
-這份文件專門寫給你在 n8n 裡面實際照著點的步驟。
+This document explains how to wire n8n to the backend in a real deployment.
 
-## 1. 建立 workflow
+n8n only triggers the backend. It does not contain research logic.
 
-1. 打開 n8n。
-2. 點 `New Workflow`。
-3. 命名，例如：
-   - `AI Investment Research Daily Pipeline`
-
-## 2. 加 Schedule Trigger
-
-1. 新增 `Schedule Trigger` node。
-2. 設定每日觸發時間。
-3. 建議：
-   - 每天 07:00
-
-## 3. 加 HTTP Request node
-
-1. 新增 `HTTP Request` node。
-2. Method 選 `POST`。
-3. URL 填：
+## Goal
 
 ```text
-https://<你的後端網址>/pipeline/run
+Schedule Trigger
+→ HTTP Request
+→ FastAPI POST /pipeline/run
+→ collect
+→ ingestion
+→ Supabase staging
+→ promotion
+→ Supabase production/views
 ```
 
-如果是本機開發：
+## 1. Create the workflow
+
+1. Open n8n.
+2. Create a new workflow.
+3. Name it something clear, for example:
+   - `AI Investment Research Daily Pipeline`
+
+## 2. Add a Schedule Trigger
+
+1. Add a `Schedule Trigger` node.
+2. Set it to run every day at `07:00`.
+3. Use the `Asia/Taipei` timezone if the node supports it.
+4. If your n8n instance stores all schedules in UTC, convert 07:00 Taipei time to UTC before saving.
+
+## 3. Add an HTTP Request node
+
+1. Add an `HTTP Request` node after the schedule trigger.
+2. Method: `POST`
+3. URL:
+
+```text
+https://<your-backend-host>/pipeline/run
+```
+
+For local testing:
 
 ```text
 http://localhost:8000/pipeline/run
 ```
 
-## 4. Header 設定
+## 4. Add headers
 
-加這兩個 header：
+Use these headers:
 
 ```text
 Authorization: Bearer {{$env.API_AUTH_TOKEN}}
 Content-Type: application/json
 ```
 
-注意：
+Important:
 
-- 不要把 token 寫死在 workflow JSON
-- 不要把 `SUPABASE_SERVICE_ROLE_KEY` 放進 n8n
-- n8n 只需要 API token，不需要 Supabase service key
+- Do not hardcode the token in the workflow JSON.
+- Do not put `SUPABASE_SERVICE_ROLE_KEY` into n8n.
+- n8n should only know the API token needed to call FastAPI.
 
-## 5. Body 設定
-
-請把 request body 設成：
+## 5. Use this request body
 
 ```json
 {
@@ -61,54 +74,27 @@ Content-Type: application/json
 }
 ```
 
-這代表：
+## 6. Branch on response status
 
-- 先跑整批追蹤宇宙
-- 來源層用 `hybrid`
-- 摘要器先用 `auto`
-- ingestion 寫 staging
-- promotion 寫 production
-
-## 6. 加 IF node
-
-在 HTTP Request 後面加 `IF` node，判斷 `{{$json.status}}`。
+After the HTTP Request node, add an `IF` node that checks `{{$json.status}}`.
 
 ### success
 
-```text
-status = success
-```
-
-處理：
-
-- 正常結束
-- 寫 log
+- Record the run.
+- Stop the workflow normally.
 
 ### partial_success
 
-```text
-status = partial_success
-```
-
-處理：
-
-- 通知管理者檢查
-- 建議附上 pipeline report 路徑
+- Notify a human to inspect the pipeline report.
 
 ### failed
 
-```text
-status = failed
-```
+- Alert immediately.
+- Stop further automation.
 
-處理：
+## 7. What n8n should read from the response
 
-- 發警報
-- 停止後續流程
-
-## 7. n8n 應該讀哪些欄位
-
-從 `/pipeline/run` 回傳內容，n8n 至少要看：
+The response should include at least:
 
 - `status`
 - `message`
@@ -118,24 +104,34 @@ status = failed
 - `data.promotion_result`
 - `errors`
 
-## 8. 你要知道的角色邊界
+## 8. If something fails
 
-- n8n：排程與觸發
-- FastAPI：接收命令與包裝後端流程
-- LangGraph Collector：研究與收集大腦
-- ingestion：把 output packets 寫進 Supabase staging
-- promotion：把 staging 推進 production
-- Supabase：正式資料中心
-- 前端：只讀 production views
+Check these first:
 
-## 9. 失敗時先檢查什麼
+1. `API_AUTH_TOKEN`
+2. FastAPI service is running
+3. `SUPABASE_URL`
+4. `SUPABASE_SERVICE_ROLE_KEY`
+5. `output/` path and logs
+6. `pipeline_report`
 
-如果 n8n 收到 `failed` 或 `partial_success`，先看這些：
+## 9. What n8n is responsible for
 
-1. `API_AUTH_TOKEN` 有沒有設
-2. FastAPI 有沒有真的啟動
-3. 後端 `SUPABASE_URL` 有沒有設
-4. 後端 `SUPABASE_SERVICE_ROLE_KEY` 有沒有設
-5. `output/` 有沒有寫出檔案
-6. `output/logs/` 裡的 pipeline report 有沒有產生
+- Scheduling
+- Triggering FastAPI
+- Routing on success / partial_success / failed
+- Notifications and basic orchestration
 
+## 10. What n8n is not responsible for
+
+- Research strategy
+- Source selection
+- Summarization logic
+- Data modeling
+- Database schema
+
+## Related files
+
+- `docs/n8n_api_usage.md`
+- `docs/deployment_wiring_checklist.md`
+- `docs/pipeline_runbook.md`

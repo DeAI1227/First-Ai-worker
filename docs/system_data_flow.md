@@ -1,4 +1,4 @@
-# System Data Flow
+﻿# System Data Flow
 
 This project has a single official data path:
 
@@ -56,7 +56,6 @@ It should not reconstruct these structures from raw tables or output JSON.
 
 ## Related documentation
 
-- `frontend_integration/` is the contract and query reference pack for the future Supabase-only frontend.
-- `supabase/frontend_query_contract.md` defines the page-to-view mapping.
-- `supabase/frontend_query_views.sql` defines the production views.
-
+- [`frontend_integration/`](../frontend_integration/README.md) is the contract and query reference pack for the future Supabase-only frontend.
+- [`supabase/frontend_query_contract.md`](../supabase/frontend_query_contract.md) defines the page-to-view mapping.
+- [`supabase/frontend_query_views.sql`](../supabase/frontend_query_views.sql) defines the production views.

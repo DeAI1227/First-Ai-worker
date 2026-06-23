@@ -1,8 +1,6 @@
-# Deployment Wiring Checklist
+﻿# Deployment Wiring Checklist
 
-這份文件的目標很直接：讓你真的把整條 AI 員工接起來，而不是只看架構圖。
-
-正式接線路徑：
+這份文件是「實際去設定」的 checklist。目標是把流程真正接起來：
 
 ```text
 n8n Schedule Trigger
@@ -12,89 +10,81 @@ n8n Schedule Trigger
 → Supabase staging
 → promotion
 → Supabase production/views
-→ 前端讀 Supabase
+→ frontend reads Supabase only
 ```
 
-## 先講清楚資料責任
+## 你要先知道的邊界
 
 - 前端只讀 Supabase production views
 - 前端不讀 Python 程式
 - 前端不讀 `output/` JSON
-- `output/` JSON 是後端中間產物，不是前端資料來源
-- `service_role` key 只給後端，不能放前端
-- `anon` key 給前端讀 Supabase views 用
+- `output/` JSON 只是後端中間產物
+- `service_role` key 只能給後端，不給前端
+- `anon` key 給前端使用
 
 ## 1. Supabase 必做事項
 
-### 1. 建立 Supabase project
+### 1) 建立 Supabase project
 
-1. 到 [Supabase Console](https://supabase.com/dashboard)。
-2. 點 `New project`。
-3. 選 Organization。
-4. 輸入 Project name。
-5. 設定 database password。
-6. 選 region。
-7. 等 project 建好。
+1. 到 [Supabase Console](https://supabase.com/dashboard)
+2. 建立 `New project`
+3. 選 organization
+4. 輸入 project name
+5. 設定 database password
+6. 選 region
+7. 等待 project 建立完成
 
-### 2. 找到 Project URL
+### 2) 找到 Project URL
 
-1. 進入你的 Supabase project。
-2. 左側點 `Project Settings`。
-3. 進入 `API`。
-4. 複製 `Project URL`。
+1. 打開你的 Supabase project
+2. 進入 `Project Settings`
+3. 點 `API`
+4. 複製 `Project URL`
 
-這個值會放進：
+填入：
 
 - 後端 `.env` 的 `SUPABASE_URL`
 - 前端 `.env` 的 `VITE_SUPABASE_URL`
 
-### 3. 找到 anon key
+### 3) 找到 anon key
 
-1. 還是在 `Project Settings` → `API`。
-2. 找 `Project API keys`。
-3. 複製 `anon public` key。
+1. 在 `Project Settings` → `API`
+2. 找 `Project API keys`
+3. 複製 `anon public` key
 
-這個值只給前端：
+填入：
 
-- `VITE_SUPABASE_ANON_KEY`
+- 前端 `.env` 的 `VITE_SUPABASE_ANON_KEY`
 
-### 4. 找到 service_role key
+### 4) 找到 service_role key
 
-1. 一樣在 `Project Settings` → `API`。
-2. 找 `service_role` key。
-3. 複製它。
+1. 在 `Project Settings` → `API`
+2. 找 `service_role` key
+3. 複製這把 key
 
-這個值只給後端：
+填入：
 
-- `SUPABASE_SERVICE_ROLE_KEY`
+- 後端 `.env` 的 `SUPABASE_SERVICE_ROLE_KEY`
 
-不要把這個 key 放進前端、n8n workflow、或公開文件。
+注意：這把 key 只能放後端，不能放前端，也不要寫進 n8n workflow JSON。
 
-### 5. 打開 SQL Editor
+### 5) 打開 SQL Editor
 
-1. 左側點 `SQL Editor`。
-2. 點 `New query`。
-3. 依序執行 SQL 檔。
+1. 進入 `SQL Editor`
+2. 點 `New query`
+3. 準備執行 SQL
 
-### 6. 依序執行 SQL
+### 6) 依序執行 SQL
 
-先執行：
-
-```text
-supabase/production_schema.sql
-supabase/staging_schema.sql
-supabase/seed_reference_data.sql
-```
-
-建議順序是：
+依序執行：
 
 1. `supabase/production_schema.sql`
 2. `supabase/staging_schema.sql`
 3. `supabase/seed_reference_data.sql`
 
-### 7. 確認 tables 存在
+### 7) 確認 tables 存在
 
-執行完後，在 SQL Editor 跑：
+在 SQL Editor 執行：
 
 ```sql
 select table_name
@@ -103,7 +93,7 @@ where table_schema = 'public'
 order by table_name;
 ```
 
-確認至少有這些 tables：
+應該要看到至少這些 tables：
 
 - `industries`
 - `stocks`
@@ -124,9 +114,9 @@ order by table_name;
 - `staging_rejected_sources`
 - `ingestion_errors`
 
-### 8. 確認 views 存在
+### 8) 確認 views 存在
 
-再跑：
+執行：
 
 ```sql
 select table_name
@@ -135,7 +125,7 @@ where table_schema = 'public'
 order by table_name;
 ```
 
-確認至少有：
+應該要看到：
 
 - `view_dashboard_events`
 - `view_industry_cards`
@@ -146,9 +136,9 @@ order by table_name;
 - `view_recent_reports`
 - `view_unread_counts`
 
-### 9. 確認 stocks reference data
+### 9) 確認 stocks reference data
 
-跑：
+執行：
 
 ```sql
 select stock_code, stock_name
@@ -156,11 +146,11 @@ from stocks
 order by stock_code;
 ```
 
-你應該會看到 45 檔追蹤股票。
+應該會看到追蹤股票 reference data。
 
-### 10. 確認 industries reference data
+### 10) 確認 industries reference data
 
-跑：
+執行：
 
 ```sql
 select industry_id, industry_name
@@ -168,7 +158,7 @@ from industries
 order by industry_id;
 ```
 
-你應該會看到六大產業：
+應該會看到六大產業：
 
 - 散熱
 - 電力
@@ -179,9 +169,9 @@ order by industry_id;
 
 ## 2. 後端 `.env` 必填
 
-請在專案根目錄放 `.env`，內容請參考 [../.env.example](../.env.example)。
+把 `.env.example` 複製成 `.env`，再填真實值。
 
-### 必填
+### 正式寫入 Supabase 必填
 
 ```env
 SUPABASE_URL=
@@ -189,9 +179,11 @@ SUPABASE_SERVICE_ROLE_KEY=
 API_AUTH_TOKEN=
 ```
 
-### 選填
+### 可選但建議先準備
 
 ```env
+ENVIRONMENT=development
+ALLOW_INSECURE_SSL=false
 OPENAI_API_KEY=
 OPENAI_MODEL=
 GEMINI_API_KEY=
@@ -200,98 +192,58 @@ TAVILY_API_KEY=
 SERPAPI_API_KEY=
 ```
 
-### 後端設定方式
+### 後端 `.env` 重點
 
-1. 打開根目錄 `.env`
-2. 貼入 `SUPABASE_URL`
-3. 貼入 `SUPABASE_SERVICE_ROLE_KEY`
-4. 貼入 `API_AUTH_TOKEN`
-5. 存檔
-
-### 後端用途
-
-- `SUPABASE_URL`：後端連 Supabase
-- `SUPABASE_SERVICE_ROLE_KEY`：後端寫 staging / production
+- `SUPABASE_URL`：Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`：只給後端
 - `API_AUTH_TOKEN`：保護 FastAPI endpoint
+- `ALLOW_INSECURE_SSL`：正式環境必須維持 `false`
 
 ## 3. 前端 `.env` 必填
 
-請在 `frontend/.env` 放入，格式參考 [../frontend/.env.example](../frontend/.env.example)。
+前端只需要讀 Supabase views，所以只放 public 權限的 key。
 
-### 必填
+### `frontend/.env.example`
 
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
-### 設定方式
+### 前端重點
 
-1. 打開 `frontend/.env`
-2. 貼入 `VITE_SUPABASE_URL`
-3. 貼入 `VITE_SUPABASE_ANON_KEY`
-4. 存檔
-
-### 前端限制
-
-- 前端不能使用 `service_role` key
-- 前端只能讀 Supabase production views
-- 前端不能直接讀 `output/` JSON
-- 前端不能直接呼叫 Collector
+- 不能使用 `service_role` key
+- 只能讀 Supabase production views
+- 不能讀 `output/` JSON
+- 不能直接呼叫 Collector
 
 ## 4. n8n 必做事項
 
-請在 n8n 做一個 workflow，照下面步驟設。
+n8n 只負責排程與觸發，不負責研究邏輯。
 
-### Step 1. 建立 workflow
+### 1) 建立 workflow
 
-1. 打開 n8n。
-2. 點 `New Workflow`。
-3. 命名，例如：
-   - `AI Investment Research Daily Pipeline`
+建立一個新的 workflow，例如：
 
-### Step 2. 加 Schedule Trigger
+- `AI Investment Research Daily Pipeline`
 
-1. 新增 `Cron` 或 `Schedule Trigger` node。
-2. 設定每日排程。
-3. 例如每天 `07:00` 觸發。
+### 2) 加 Schedule Trigger
 
-### Step 3. 加 HTTP Request node
+- 設定每天早上 07:00
+- 時區使用 `Asia/Taipei`
 
-1. 新增 `HTTP Request` node。
-2. Method 設為 `POST`。
-3. URL 填你的 FastAPI 位址：
+### 3) 加 HTTP Request node
 
-```text
-https://<你的後端網址>/pipeline/run
-```
-
-如果本機開發，會是：
-
-```text
-http://localhost:8000/pipeline/run
-```
-
-### Step 4. Header
-
-加上：
+- Method: `POST`
+- URL: `https://<你的後端網址>/pipeline/run`
+- Header：
 
 ```text
 Authorization: Bearer <API_AUTH_TOKEN>
 Content-Type: application/json
 ```
 
-如果你想用環境變數，請用：
-
-```text
-Authorization: Bearer {{$env.API_AUTH_TOKEN}}
-```
-
-不要把真 token 寫死在 node 裡。
-
-### Step 5. Body
-
-Body 使用這份：
+### 4) Body 範例
 
 ```json
 {
@@ -303,26 +255,20 @@ Body 使用這份：
 }
 ```
 
-### Step 6. 加 IF node
+### 5) 加 IF node 判斷
 
-判斷回傳的 `status`：
+- `status = success` → 正常結束
+- `status = partial_success` → 通知人工檢查
+- `status = failed` → 發警報
 
-- `success`
-- `partial_success`
-- `failed`
+### 6) 失敗時檢查
 
-### Step 7. 通知邏輯
+如果失敗，先檢查：
 
-- `success`：記錄成功即可
-- `partial_success`：通知管理者檢查
-- `failed`：通知管理者，並停止後續流程
-
-### Step 8. n8n 的角色
-
-- n8n 只負責排程與觸發
-- n8n 不負責研究邏輯
-- n8n 不負責抓新聞
-- 如果 FastAPI 沒部署或沒啟動，n8n 叫不到 AI 員工
+- API token 是否正確
+- FastAPI 是否有啟動
+- Supabase env 是否設定
+- `pipeline_report` 和 `batch_report`
 
 ## 5. 後端啟動方式
 
@@ -338,44 +284,23 @@ uvicorn api.main:app --reload
 python scripts/run_autonomous_once.py
 ```
 
-如果你還沒部署 Supabase，這個腳本會誠實回報：
+## 6. 最後確認清單
 
-- `wrote_to_supabase: false`
-- `autonomous_ready: false`
-- 並列出缺少的 env 或 write mode 錯誤
-
-## 6. 實際部署順序
-
-建議照這個順序接：
-
-1. 先把 Supabase project 建起來
-2. 執行 production / staging / seed SQL
-3. 填後端 `.env`
-4. 啟動 FastAPI
-5. 用 `python scripts/run_autonomous_once.py` 手動驗證
-6. 填前端 `.env`
-7. 啟動前端
-8. 在 n8n 建 workflow
-9. 讓 n8n 呼叫 `/pipeline/run`
-
-## 7. 最後確認清單
-
-- [ ] Supabase project 已建立
-- [ ] production_schema.sql 已執行
-- [ ] staging_schema.sql 已執行
-- [ ] seed_reference_data.sql 已執行
-- [ ] 後端 `.env` 已填 `SUPABASE_URL`
-- [ ] 後端 `.env` 已填 `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] 後端 `.env` 已填 `API_AUTH_TOKEN`
-- [ ] 前端 `.env` 已填 `VITE_SUPABASE_URL`
-- [ ] 前端 `.env` 已填 `VITE_SUPABASE_ANON_KEY`
-- [ ] FastAPI 可以啟動
-- [ ] `/health` 可以打通
-- [ ] `/pipeline/run` 可以手動打通
-- [ ] n8n workflow 已建立
-- [ ] n8n 可以呼叫 `/pipeline/run`
-- [ ] Supabase production tables 有資料
-- [ ] 前端可以讀 Supabase views
-- [ ] 前端沒有讀 `output/` JSON
-- [ ] 前端沒有讀 Python 程式
-
+```text
+[ ] Supabase project 已建立
+[ ] production_schema.sql 已執行
+[ ] staging_schema.sql 已執行
+[ ] seed_reference_data.sql 已執行
+[ ] 後端 .env 已填 SUPABASE_URL
+[ ] 後端 .env 已填 SUPABASE_SERVICE_ROLE_KEY
+[ ] 後端 .env 已填 API_AUTH_TOKEN
+[ ] 前端 .env 已填 VITE_SUPABASE_URL
+[ ] 前端 .env 已填 VITE_SUPABASE_ANON_KEY
+[ ] FastAPI 可以啟動
+[ ] /health 可以打通
+[ ] /pipeline/run 可以手動打通
+[ ] n8n workflow 已建立
+[ ] n8n 可以呼叫 /pipeline/run
+[ ] Supabase production tables 有資料
+[ ] 前端可以讀 Supabase views
+```

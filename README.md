@@ -1,122 +1,147 @@
-# LangGraph Research Collector Agent MVP
+﻿# AI 投資研究終端
 
-This repository builds the backend of an AI investment research terminal, not a stock quote app.
+這個專案是 **AI 投資研究終端**，不是股票報價 App。
 
-## System boundary
-
-## Official system direction
-
-The official system direction is documented in [`docs/system_data_flow.md`](docs/system_data_flow.md).
-
-The core data flow is:
+## 正式系統主線
 
 ```text
-LangGraph Collector
+LangGraph / Collector
 → output packets
 → ingestion
 → Supabase staging
 → promotion
-→ Supabase Production / Views
-→ Frontend reads Supabase
+→ Supabase production tables / views
+→ frontend reads Supabase only
 ```
 
-The frontend reads only Supabase production views.
-The frontend reads only Supabase production views.
-Frontend reads Supabase views only.
+## 資料邊界
 
-The frontend does not read Python code.
-The frontend does not read `output/` JSON.
-The frontend does not call the collector directly.
+- 前端只讀 Supabase production views
+- 前端不讀 Python 程式
+- 前端不讀 `output/` JSON
+- 前端不直接呼叫 Collector
+- `output/` JSON 只是後端中間產物
+- 不做即時股價、K 線、技術分析、買賣建議、目標價、報酬率預測
+- 不產生「今日未找到重大更新」假 event
+- 股票是 reference data，沒有事件也會存在於 `stocks` 與 `view_stock_cards`
 
-## What this project tracks
+## 目前主模組
 
-- 6 industries
-- 45 tracked stocks in the reference universe
-- 4 institution watch stocks
+- `collector/` - LangGraph Collector、source layer、summarizer、quality scoring
+- `ingestion/` - packet loading、dry-run、Supabase write mode
+- `promotion/` - staging to production promotion
+- `supabase/` - staging schema、production schema、reference seed、views contract
+- `api/` - FastAPI orchestrator for n8n / manual trigger
+- `frontend_integration/` - future Supabase-only frontend contract and query reference
+- `docs/` - deployment, audit, and runbook documents
+- `n8n_workflows/` - workflow templates
+
+## 跟蹤宇宙
+
+MVP 追蹤宇宙包含：
+
+- 六大產業：散熱、電力、自動駕駛、機器人、CPO 光通訊、網通
+- 45 檔追蹤股票 reference data
+- 4 檔大行關注股票
 - macro topics
 - event packets
 - daily digest packets
 - three-day reports
 - quality summaries
 
-## What this project does not do
+## 快速啟動
 
-- real-time stock quotes
-- daily price changes
-- percentage change screens
-- K-line charts
-- technical analysis
-- buy/sell suggestions
-- target price predictions
-- return forecasts
-- fake "no major update" events
-
-## Main modules
-
-- `collector/` - LangGraph Collector, source layer, summarizer, quality scoring
-- `ingestion/` - packet loading, dry-run, Supabase write mode
-- `promotion/` - staging to production promotion
-- `supabase/` - staging schema, production schema, reference seed, views contract
-- `api/` - FastAPI orchestrator for `n8n`
-- `frontend_integration/` - future Supabase-only frontend contract
-
-## Running the backend
-
-Start the API:
+### 1. 本地啟動 FastAPI
 
 ```bash
 uvicorn api.main:app --reload
 ```
 
-Run the collector and pipeline locally:
+### 2. 跑一次完整流程
 
 ```bash
-python main.py --batch all
 python scripts/run_autonomous_once.py
 ```
 
-Dry-run ingestion:
+### 3. 跑 batch all
+
+```bash
+python main.py --batch all
+```
+
+### 4. ingestion dry-run
 
 ```bash
 python -m ingestion.ingest_outputs --input output/ --dry-run
 ```
 
-Dry-run promotion:
+### 5. promotion dry-run
 
 ```bash
 python -m promotion.promote_staging --input output/ --dry-run
 ```
 
-## Supabase contract
+### 6. 自動流程 smoke test
 
-Production tables and views are the source of truth for the frontend.
-Reference data is seeded into Supabase before any event data is promoted.
+```bash
+python scripts/e2e_mvp_smoke.py
+```
 
-The stock list comes from `stocks` plus `stock_industries`.
-The event streams come from `events` plus `event_relations`.
-Empty state for stocks with no events is handled by the frontend.
+## Supabase 角色
 
-## Tracking universe
+Supabase 是正式資料中心。
 
-The MVP universe contains:
+- `staging` tables 接收 ingestion 寫入
+- `production` tables 接收 promotion 寫入
+- `views` 是新前端唯一應讀來源
 
-- `散熱`
-- `電力`
-- `自動駕駛`
-- `機器人`
-- `CPO 光通訊`
-- `網通`
+## 前端資料來源
 
-It also includes 45 tracked stocks in the reference universe, plus 4 institution watch stocks.
+前端頁面對應的 view：
 
-## Smoke and audit
+- 總覽頁 → `view_dashboard_events`
+- 產業追蹤頁 → `view_industry_cards`
+- 股票清單頁 → `view_stock_cards`
+- 股票詳情頁 → `view_stock_detail_events`
+- 大環境頁 → `view_macro_events`
+- 大行關注頁 → `view_institution_watch_events`
+- 研究報告頁 → `view_recent_reports`
+- 未讀統計 → `view_unread_counts`
 
-- `python scripts/e2e_mvp_smoke.py`
-- `python -m unittest discover -s tests -p "test_*.py" -v`
-- `python -m compileall .`
+## 重要文件
 
-## Notes
+- [`docs/system_data_flow.md`](docs/system_data_flow.md)
+- [`docs/deployment_wiring_checklist.md`](docs/deployment_wiring_checklist.md)
+- [`docs/github_actions_schedule.md`](docs/github_actions_schedule.md)
+- [`docs/pipeline_runbook.md`](docs/pipeline_runbook.md)
+- [`docs/api_contract.md`](docs/api_contract.md)
+- [`docs/n8n_api_usage.md`](docs/n8n_api_usage.md)
+- [`docs/n8n_setup_steps.md`](docs/n8n_setup_steps.md)
+- [`docs/mvp_release_checklist.md`](docs/mvp_release_checklist.md)
+- [`docs/backend_final_audit.md`](docs/backend_final_audit.md)
+- [`docs/audit_backend_supabase.md`](docs/audit_backend_supabase.md)
+- [`docs/audit_api_n8n_autonomous.md`](docs/audit_api_n8n_autonomous.md)
+- [`docs/audit_frontend_full_system.md`](docs/audit_frontend_full_system.md)
+- [`docs/time_health_audit.md`](docs/time_health_audit.md)
 
-- The collector can run in `mock`, `rss`, `http`, `search`, or `hybrid` source mode.
-- `n8n` only triggers `POST /pipeline/run`; it does not contain research logic.
-- `Supabase` is the formal data center for the new frontend.
+## 測試與驗證
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+python -m compileall .
+```
+
+## 環境變數
+
+後端正式寫入 Supabase 必填：
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `API_AUTH_TOKEN`
+
+前端必填：
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+LLM / Search providers 可先選填，沒有就 fallback mock。
