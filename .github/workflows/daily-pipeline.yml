@@ -1,0 +1,107 @@
+name: Daily AI Research Pipeline
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+      timezone: "Asia/Taipei"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-ai-research-pipeline
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FASTAPI_BASE_URL: ${{ secrets.FASTAPI_BASE_URL }}
+      API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}
+      PIPELINE_PAYLOAD: |
+        {
+          "scope": "all",
+          "source_mode": "hybrid",
+          "summarizer_mode": "auto",
+          "ingestion_dry_run": false,
+          "promotion_dry_run": false
+        }
+    steps:
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${FASTAPI_BASE_URL:-}" ]; then
+            echo "FASTAPI_BASE_URL is missing"
+            exit 1
+          fi
+          if [ -z "${API_AUTH_TOKEN:-}" ]; then
+            echo "API_AUTH_TOKEN is missing"
+            exit 1
+          fi
+          echo "Scheduled run target: 07:00 Asia/Taipei (timezone-aware schedule)"
+
+      - name: Call FastAPI /pipeline/run
+        id: call_pipeline
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          http_code="$(curl -sS -o "$response_file" -w "%{http_code}" \
+            -X POST "${FASTAPI_BASE_URL%/}/pipeline/run" \
+            -H "Authorization: Bearer ${API_AUTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary "${PIPELINE_PAYLOAD}")"
+
+          echo "HTTP status: $http_code"
+          cat "$response_file"
+
+          python - "$response_file" "$http_code" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          response_path = pathlib.Path(sys.argv[1])
+          http_code = int(sys.argv[2])
+          payload = json.loads(response_path.read_text(encoding="utf-8"))
+
+          status = str(payload.get("status") or "").strip().lower()
+          execution_mode = str(payload.get("execution_mode") or "").strip().lower()
+          job_id = payload.get("job_id")
+          message = str(payload.get("message") or "")
+          errors = payload.get("errors") if isinstance(payload.get("errors"), list) else []
+
+          print(f"status={status}")
+          print(f"execution_mode={execution_mode}")
+          print(f"job_id={job_id}")
+          print(f"message={message}")
+          print(f"errors={len(errors)}")
+
+          if http_code >= 400:
+              print(f"HTTP_ERROR={http_code}")
+              sys.exit(1)
+
+          if status == "failed":
+              sys.exit(1)
+
+          if status == "partial_success":
+              print("WARNING: pipeline completed with partial_success")
+          PY
+
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Daily AI Research Pipeline"
+            echo ""
+            echo "- Trigger: scheduled for 07:00 Asia/Taipei"
+            echo "- Cron: 0 7 * * *"
+            echo "- Timezone: Asia/Taipei"
+            echo "- Payload:"
+            echo '```json'
+            echo "${PIPELINE_PAYLOAD}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

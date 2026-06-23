@@ -1,0 +1,5 @@
+{
+  "input_path": "output/",
+  "packet_type": "all",
+  "dry_run": true
+}

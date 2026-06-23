@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import Any
+
+from collector.sources.base import clean_text, normalize_source_item
+from collector.sources.search import SEARCH_PROVIDER_REGISTRY, select_search_provider
+from collector.sources.search.mock_search_provider import MockSearchProvider
+
+
+def fetch_search_sources(
+    task: dict,
+    keywords: list[str] | None = None,
+    state: dict | None = None,
+    provider: str | None = None,
+) -> list[dict]:
+    if state is None:
+        state = {}
+
+    keyword_list = _normalize_keywords(keywords or task.get("search_keywords", []))
+    if not keyword_list:
+        state.setdefault("run_errors", []).append("search keywords are not configured")
+        return []
+
+    provider_name, provider_impl = select_search_provider(provider or state.get("search_provider"), state)
+    raw_sources: list[dict[str, Any]] = []
+    for keyword in keyword_list:
+        try:
+            results = provider_impl.search(task, [keyword], state)
+        except Exception as exc:
+            state.setdefault("run_errors", []).append(f"search provider {provider_name} failed for keyword {keyword}: {exc}")
+            if provider_name != "mock":
+                results = MockSearchProvider().search(task, [keyword], state)
+            else:
+                results = []
+
+        for item in results:
+            normalized = _normalize_search_item(item)
+            if normalized:
+                raw_sources.append(normalized)
+
+    deduped = _dedupe_by_source_url(raw_sources)
+    if not deduped and provider_name != "mock":
+        state.setdefault("run_errors", []).append(
+            f"search provider {provider_name} returned no items; fallback to mock search results"
+        )
+        deduped = _dedupe_by_source_url(MockSearchProvider().search(task, keyword_list, state))
+
+    return deduped
+
+
+def mock_search_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
+    return MockSearchProvider().search(task, keywords, state)
+
+
+def tavily_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
+    provider_name, provider_impl = select_search_provider("tavily", state)
+    if provider_name == "mock":
+        return MockSearchProvider().search(task, keywords, state)
+    return provider_impl.search(task, keywords, state)
+
+
+def serpapi_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
+    provider_name, provider_impl = select_search_provider("serpapi", state)
+    if provider_name == "mock":
+        return MockSearchProvider().search(task, keywords, state)
+    return provider_impl.search(task, keywords, state)
+
+
+def _normalize_keywords(keywords: Iterable[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for keyword in keywords:
+        cleaned = clean_text(keyword)
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        normalized.append(cleaned)
+    return normalized
+
+
+def _normalize_search_item(item: dict[str, Any]) -> dict[str, Any] | None:
+    title = clean_text(item.get("title", ""))
+    source_name = clean_text(item.get("source_name", ""))
+    source_url = clean_text(item.get("source_url", ""))
+    published_at = clean_text(item.get("published_at", ""))
+    content = clean_text(item.get("content", ""))
+    if not title or not source_url or not content:
+        return None
+    return normalize_source_item(
+        {
+            "title": title,
+            "source_name": source_name or "Search Source",
+            "source_url": source_url,
+            "published_at": published_at,
+            "content": content,
+        },
+        "search",
+    )
+
+
+def _dedupe_by_source_url(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in items:
+        source_url = clean_text(item.get("source_url", ""))
+        if not source_url or source_url in seen:
+            continue
+        seen.add(source_url)
+        deduped.append(item)
+    return deduped
+
+
+__all__ = [
+    "SEARCH_PROVIDER_REGISTRY",
+    "fetch_search_sources",
+    "mock_search_provider",
+    "serpapi_provider",
+    "tavily_provider",
+]

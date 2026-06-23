@@ -1,0 +1,7 @@
+feedparser
+beautifulsoup4
+requests
+langgraph
+fastapi
+uvicorn
+pydantic

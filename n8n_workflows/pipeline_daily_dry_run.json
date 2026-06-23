@@ -1,0 +1,175 @@
+{
+  "name": "AI Investment Research Pipeline - Daily Dry Run",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron_trigger",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "http://localhost:8000/pipeline/run",
+        "method": "POST",
+        "responseFormat": "json",
+        "jsonParameters": true,
+        "options": {},
+        "headerParametersJson": "{\"Content-Type\":\"application/json\",\"Authorization\":\"Bearer <API_AUTH_TOKEN>\"}",
+        "bodyParametersJson": "{\n  \"collect\": {\n    \"batch\": \"all\",\n    \"source_mode\": \"hybrid\",\n    \"summarizer_mode\": \"mock\",\n    \"search_provider\": \"mock\"\n  },\n  \"ingestion\": {\n    \"enabled\": true,\n    \"input_path\": \"output/\",\n    \"packet_type\": \"all\",\n    \"dry_run\": true\n  },\n  \"promotion\": {\n    \"enabled\": true,\n    \"input_path\": \"output/\",\n    \"packet_type\": \"all\",\n    \"dry_run\": true\n  }\n}"
+      },
+      "id": "http_pipeline",
+      "name": "HTTP Request: POST /pipeline/run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equals",
+              "value2": "success"
+            }
+          ]
+        }
+      },
+      "id": "if_success",
+      "name": "IF Node: success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [780, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equals",
+              "value2": "partial_success"
+            }
+          ]
+        }
+      },
+      "id": "if_partial_success",
+      "name": "IF Node: partial_success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1020, 340]
+    },
+    {
+      "parameters": {},
+      "id": "success_path",
+      "name": "Success Path",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1020, 180]
+    },
+    {
+      "parameters": {},
+      "id": "partial_success_path",
+      "name": "Partial Success Path",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1260, 340]
+    },
+    {
+      "parameters": {},
+      "id": "failed_path",
+      "name": "Failed Path",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1260, 480]
+    }
+  ],
+  "connections": {
+    "Cron Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: POST /pipeline/run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request: POST /pipeline/run": {
+      "main": [
+        [
+          {
+            "node": "IF Node: success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Node: success": {
+      "main": [
+        [
+          {
+            "node": "Success Path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Node: partial_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Node: partial_success": {
+      "main": [
+        [
+          {
+            "node": "Partial Success Path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failed Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "timezone": "Asia/Taipei"
+  },
+  "versionId": "pipeline-daily-dry-run-template",
+  "meta": {
+    "template": true
+  },
+  "tags": [
+    {
+      "name": "pipeline"
+    },
+    {
+      "name": "dry-run"
+    }
+  ]
+}

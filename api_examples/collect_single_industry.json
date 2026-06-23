@@ -1,0 +1,13 @@
+{
+  "mode": "daily",
+  "scope": "industry",
+  "scope_name": "散熱",
+  "stock_code": "6230",
+  "stock_name": "尼得科超眾",
+  "source_mode": "hybrid",
+  "summarizer_mode": "mock",
+  "llm_provider": "auto",
+  "search_provider": "mock",
+  "batch": null,
+  "dry_run": false
+}

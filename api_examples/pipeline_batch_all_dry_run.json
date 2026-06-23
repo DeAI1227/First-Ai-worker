@@ -1,0 +1,21 @@
+{
+  "collect": {
+    "batch": "all",
+    "source_mode": "hybrid",
+    "summarizer_mode": "mock",
+    "llm_provider": "auto",
+    "search_provider": "mock"
+  },
+  "ingestion": {
+    "enabled": true,
+    "input_path": "output/",
+    "packet_type": "all",
+    "dry_run": true
+  },
+  "promotion": {
+    "enabled": true,
+    "input_path": "output/",
+    "packet_type": "all",
+    "dry_run": true
+  }
+}
