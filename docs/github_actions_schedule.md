@@ -1,6 +1,6 @@
 ﻿# GitHub Actions 7:00 Asia/Taipei Schedule
 
-This repository uses GitHub Actions as one possible free scheduler for the backend pipeline.
+This repository uses GitHub Actions as the official free scheduler for the backend pipeline.
 
 ## Purpose
 
@@ -43,9 +43,13 @@ A successful run should show:
 
 A partial success is still a valid run, but it should be inspected.
 
-## When to use GitHub Actions vs n8n
+## Why GitHub Actions is the official scheduler
 
-- Use GitHub Actions if you want a free cloud scheduler with no extra server to maintain.
-- Use n8n if you already have a self-hosted or paid automation stack and want more workflow branching.
+- It is free for this project.
+- It runs in the cloud even when your laptop is off.
+- It already has a committed workflow file in this repo.
 
-For this project, both can trigger the same FastAPI endpoint.
+## Legacy note
+
+- `n8n` / `Umbrella` are no longer the main automation route for this project.
+- Older n8n docs are kept only as reference material.

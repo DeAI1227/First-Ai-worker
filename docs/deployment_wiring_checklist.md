@@ -1,9 +1,9 @@
 ﻿# Deployment Wiring Checklist
 
-這份文件是「實際去設定」的 checklist。目標是把流程真正接起來：
+這份文件是「實際去設定」的 checklist。正式排程已改為 **GitHub Actions**，不是 n8n / Umbrella。
 
 ```text
-n8n Schedule Trigger
+GitHub Actions Schedule
 → FastAPI POST /pipeline/run
 → LangGraph Collector
 → ingestion
@@ -66,7 +66,7 @@ n8n Schedule Trigger
 
 - 後端 `.env` 的 `SUPABASE_SERVICE_ROLE_KEY`
 
-注意：這把 key 只能放後端，不能放前端，也不要寫進 n8n workflow JSON。
+注意：這把 key 只能放後端，不能放前端，也不要寫進 workflow JSON。
 
 ### 5) 打開 SQL Editor
 
@@ -217,57 +217,44 @@ VITE_SUPABASE_ANON_KEY=
 - 不能讀 `output/` JSON
 - 不能直接呼叫 Collector
 
-## 4. n8n 必做事項
+## 4. GitHub Actions 必做事項
 
-n8n 只負責排程與觸發，不負責研究邏輯。
+GitHub Actions 是正式的免費雲端排程器；n8n / Umbrella 只保留歷史參考，不是主線。
 
-### 1) 建立 workflow
+### 1) 確認 workflow 檔案
 
-建立一個新的 workflow，例如：
+請確認存在：
 
-- `AI Investment Research Daily Pipeline`
+- `.github/workflows/daily-pipeline.yml`
 
-### 2) 加 Schedule Trigger
+### 2) 設定 Schedule
 
 - 設定每天早上 07:00
 - 時區使用 `Asia/Taipei`
 
-### 3) 加 HTTP Request node
+### 3) 設定 Secrets
 
-- Method: `POST`
-- URL: `https://<你的後端網址>/pipeline/run`
-- Header：
+在 GitHub repository settings 內設定：
 
-```text
-Authorization: Bearer <API_AUTH_TOKEN>
-Content-Type: application/json
-```
+- `FASTAPI_BASE_URL`
+- `API_AUTH_TOKEN`
 
-### 4) Body 範例
+### 4) Workflow 會做的事
 
-```json
-{
-  "scope": "all",
-  "source_mode": "hybrid",
-  "summarizer_mode": "auto",
-  "ingestion_dry_run": false,
-  "promotion_dry_run": false
-}
-```
+- `POST /pipeline/run`
+- 檢查 `status`
+- `success` 正常結束
+- `partial_success` 發出提醒
+- `failed` 直接失敗
 
-### 5) 加 IF node 判斷
-
-- `status = success` → 正常結束
-- `status = partial_success` → 通知人工檢查
-- `status = failed` → 發警報
-
-### 6) 失敗時檢查
+### 5) 失敗時檢查
 
 如果失敗，先檢查：
 
-- API token 是否正確
+- GitHub Actions secrets 是否存在
 - FastAPI 是否有啟動
-- Supabase env 是否設定
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 - `pipeline_report` 和 `batch_report`
 
 ## 5. 後端啟動方式
@@ -299,8 +286,14 @@ python scripts/run_autonomous_once.py
 [ ] FastAPI 可以啟動
 [ ] /health 可以打通
 [ ] /pipeline/run 可以手動打通
-[ ] n8n workflow 已建立
-[ ] n8n 可以呼叫 /pipeline/run
+[ ] GitHub Actions workflow 已建立
+[ ] GitHub Actions 可以呼叫 /pipeline/run
 [ ] Supabase production tables 有資料
 [ ] 前端可以讀 Supabase views
+
+## 5. n8n / Umbrella 狀態
+
+- `n8n` / `Umbrella` 不再是正式排程路線
+- 舊 workflow 文件僅作歷史參考
+- 正式的自動排程請使用 GitHub Actions
 ```

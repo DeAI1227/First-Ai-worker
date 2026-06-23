@@ -2,6 +2,10 @@
 
 這個專案是 **AI 投資研究終端**，不是股票報價 App。
 
+## Official system direction
+
+The frontend reads only Supabase production views.
+
 ## 正式系統主線
 
 ```text
@@ -31,10 +35,10 @@ LangGraph / Collector
 - `ingestion/` - packet loading、dry-run、Supabase write mode
 - `promotion/` - staging to production promotion
 - `supabase/` - staging schema、production schema、reference seed、views contract
-- `api/` - FastAPI orchestrator for n8n / manual trigger
+- `api/` - FastAPI orchestrator for GitHub Actions / manual trigger
 - `frontend_integration/` - future Supabase-only frontend contract and query reference
 - `docs/` - deployment, audit, and runbook documents
-- `n8n_workflows/` - workflow templates
+- `n8n_workflows/` - legacy workflow templates kept for reference
 
 ## 跟蹤宇宙
 
@@ -57,31 +61,56 @@ MVP 追蹤宇宙包含：
 uvicorn api.main:app --reload
 ```
 
+### 1.5 前端部署成真正網址
+
+前端已經是 Supabase-only 的靜態站，可以直接部署到 GitHub Pages。
+
+部署 workflow：
+
+- [`.github/workflows/frontend-pages.yml`](.github/workflows/frontend-pages.yml)
+
+部署後的網址通常會像：
+
+```text
+https://<your-github-username>.github.io/First-Ai-worker/
+```
+
+> GitHub Pages 只負責前端靜態站，不承載 Python 後端。
+
 ### 2. 跑一次完整流程
 
 ```bash
 python scripts/run_autonomous_once.py
 ```
 
-### 3. 跑 batch all
+### 3. 官方排程
+
+GitHub Actions 是目前正式使用的免費雲端排程器。每天早上 07:00 Taipei time 會觸發後端 pipeline。
+
+相關設定請看：
+
+- [`docs/github_actions_schedule.md`](docs/github_actions_schedule.md)
+- [`.github/workflows/daily-pipeline.yml`](.github/workflows/daily-pipeline.yml)
+
+### 4. 跑 batch all
 
 ```bash
 python main.py --batch all
 ```
 
-### 4. ingestion dry-run
+### 5. ingestion dry-run
 
 ```bash
 python -m ingestion.ingest_outputs --input output/ --dry-run
 ```
 
-### 5. promotion dry-run
+### 6. promotion dry-run
 
 ```bash
 python -m promotion.promote_staging --input output/ --dry-run
 ```
 
-### 6. 自動流程 smoke test
+### 7. 自動流程 smoke test
 
 ```bash
 python scripts/e2e_mvp_smoke.py
@@ -115,8 +144,9 @@ Supabase 是正式資料中心。
 - [`docs/github_actions_schedule.md`](docs/github_actions_schedule.md)
 - [`docs/pipeline_runbook.md`](docs/pipeline_runbook.md)
 - [`docs/api_contract.md`](docs/api_contract.md)
-- [`docs/n8n_api_usage.md`](docs/n8n_api_usage.md)
-- [`docs/n8n_setup_steps.md`](docs/n8n_setup_steps.md)
+- [`docs/github_pages_frontend.md`](docs/github_pages_frontend.md) - frontend deployment note
+- [`docs/n8n_api_usage.md`](docs/n8n_api_usage.md) - legacy reference only
+- [`docs/n8n_setup_steps.md`](docs/n8n_setup_steps.md) - legacy reference only
 - [`docs/mvp_release_checklist.md`](docs/mvp_release_checklist.md)
 - [`docs/backend_final_audit.md`](docs/backend_final_audit.md)
 - [`docs/audit_backend_supabase.md`](docs/audit_backend_supabase.md)
@@ -145,3 +175,8 @@ python -m compileall .
 - `VITE_SUPABASE_ANON_KEY`
 
 LLM / Search providers 可先選填，沒有就 fallback mock。
+
+### 排程器
+
+- 官方正式排程器：GitHub Actions
+- `n8n` / Umbrella：保留舊文件參考，不再是主線

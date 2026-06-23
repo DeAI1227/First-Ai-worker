@@ -14,7 +14,7 @@
 - Promotion write mode works.
 - Production views are queryable.
 - FastAPI `POST /pipeline/run` works.
-- n8n can call `POST /pipeline/run`.
+- GitHub Actions can call `POST /pipeline/run`.
 
 ## Frontend
 
@@ -35,5 +35,4 @@
 
 - Verify write mode on a real Supabase project.
 - Verify production views against the live frontend.
-- Verify n8n status branching against the live endpoint.
-
+- Verify GitHub Actions status branching against the live endpoint.

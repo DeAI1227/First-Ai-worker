@@ -1,13 +1,13 @@
 # Backend API Contract Pack
 
 Frontend reads Supabase views directly.
-n8n calls FastAPI to trigger backend pipeline.
+GitHub Actions calls FastAPI to trigger the backend pipeline.
 FastAPI does not replace Supabase as the frontend data source.
 
 ## System flow
 
 ```text
-n8n
+GitHub Actions
 → FastAPI /pipeline/run
 → LangGraph Collector
 → output packets
@@ -271,9 +271,9 @@ FastAPI serves interactive docs at:
 
 If a request or response field changes in code, update the Pydantic schemas in `api/schemas.py` so Swagger stays accurate.
 
-## Practical notes for n8n and operators
+## Practical notes for GitHub Actions and operators
 
-- n8n should branch on `status`.
+- GitHub Actions should branch on `status`.
 - `success` means continue.
 - `partial_success` means notify for inspection.
 - `failed` means stop and alert.

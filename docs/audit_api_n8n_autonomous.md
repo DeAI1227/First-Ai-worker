@@ -1,8 +1,10 @@
-# API、n8n、自動執行能力全面巡檢
+# API、自動執行能力全面巡檢
+
+> Legacy note: GitHub Actions is now the official scheduler. This document is kept for historical n8n reference only.
 
 ## 1. 整體結論：warning
 
-目前後端與 n8n 接線結構是正確的，而且 `collect → ingestion → promotion` 的同步主流程已經存在；`/pipeline/run` 也不是假成功，會真的往下呼叫各階段。
+目前後端的同步主流程已經存在，而且 `collect → ingestion → promotion` 也不是假成功，`/pipeline/run` 會真的往下呼叫各階段。
 
 但這一版在我這個工作區的實際執行結果仍是 **failed**，主因是：
 
@@ -78,13 +80,13 @@ auth 基本上是安全的，至少在結構上沒有看到把 token 寫死在 r
 
 ---
 
-## 5. n8n workflow 是否存在
+## 5. workflow 是否存在
 
-有，已經存在：
+有，已經存在（歷史參考）：
 
 - `n8n_workflows/autonomous_daily_pipeline.json`
 
-它的內容是最小可用版本：
+它的內容是最小可用版本，但不再是正式排程路線：
 
 - Schedule Trigger
 - HTTP Request `POST /pipeline/run`
@@ -92,11 +94,11 @@ auth 基本上是安全的，至少在結構上沒有看到把 token 寫死在 r
 
 ### 角色定位
 
-n8n 目前是 **觸發器與分流器**，不是研究邏輯執行者。
+GitHub Actions 目前是正式觸發器與分流器；n8n 只保留為歷史參考，不是研究邏輯執行者。
 
 ---
 
-## 6. n8n 是否能呼叫 /pipeline/run
+## 6. 是否能呼叫 /pipeline/run
 
 可以，但前提是：
 
@@ -104,7 +106,7 @@ n8n 目前是 **觸發器與分流器**，不是研究邏輯執行者。
 - `API_AUTH_TOKEN` 有設定
 - HTTP Request 使用 Bearer token
 
-文件與 workflow 都已經把這件事設計好，n8n 只需要發出請求與看回應狀態，不需要自己做研究判斷。
+文件與 workflow 都已經把這件事設計好，GitHub Actions 只需要發出請求與看回應狀態，不需要自己做研究判斷。
 
 ---
 
@@ -218,7 +220,7 @@ n8n 目前是 **觸發器與分流器**，不是研究邏輯執行者。
 
 5. 確認 production / staging / promotion 的實際寫入權限
 
-6. 確認 n8n workflow 使用的 `API_AUTH_TOKEN` 與後端一致
+6. 確認 GitHub Actions workflow 使用的 `API_AUTH_TOKEN` 與後端一致
 
 ---
 
@@ -227,7 +229,7 @@ n8n 目前是 **觸發器與分流器**，不是研究邏輯執行者。
 1. 先把 Supabase env 補齊
 2. 把可用的 RSS / HTTP 來源補進設定
 3. 再跑一次 `python scripts/run_autonomous_once.py`
-4. 若要讓 n8n 正式接管，直接用 `n8n_workflows/autonomous_daily_pipeline.json`
+4. 若要讓舊的 n8n 流程重新使用，只能當歷史參考；正式自動化請用 `.github/workflows/daily-pipeline.yml`
 5. 寫入成功後，再檢查 Supabase production views 是否能被新前端直接讀到
 
 ---

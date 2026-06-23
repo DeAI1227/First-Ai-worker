@@ -23,11 +23,10 @@ LangGraph Collector
 - Production views are the frontend read model.
 - 45 tracked stocks are reference data, not event data.
 - Stocks with no events do not generate fake packets.
-- n8n only triggers `POST /pipeline/run` and branches on the response status.
+- GitHub Actions is the official scheduler and only triggers `POST /pipeline/run` through the workflow; legacy n8n docs are historical only.
 - The frontend reads Supabase views only.
 - The frontend does not read Python code or `output/` JSON files.
 
 ## Operational note
 
 This file is the final backend audit summary for the MVP. If any of the commands listed in `docs/pipeline_runbook.md` fail locally, record the failure there instead of silently assuming success.
-

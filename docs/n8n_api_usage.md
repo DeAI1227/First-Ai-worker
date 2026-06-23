@@ -1,9 +1,11 @@
 ﻿# n8n API Usage
 
-This guide shows how n8n should call the FastAPI orchestrator.
+> Legacy reference only. The official scheduler for this project is GitHub Actions.
+
+This guide shows how n8n used to call the FastAPI orchestrator.
 
 The frontend reads Supabase production views directly.
-n8n calls FastAPI to trigger backend jobs.
+GitHub Actions calls FastAPI to trigger backend jobs.
 FastAPI is not the frontend data source.
 
 ## Authorization

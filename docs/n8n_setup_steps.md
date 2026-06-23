@@ -1,8 +1,10 @@
 ﻿# n8n Setup Steps
 
-This document explains how to wire n8n to the backend in a real deployment.
+> Legacy reference only. The official scheduler for this project is GitHub Actions.
 
-n8n only triggers the backend. It does not contain research logic.
+This document explains how n8n used to wire to the backend in a real deployment.
+
+n8n only triggered the backend. It did not contain research logic.
 
 ## Goal
 

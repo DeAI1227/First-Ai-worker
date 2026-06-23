@@ -18,6 +18,8 @@ flowchart TD
 - Ingestion writes those packets into Supabase staging tables.
 - Promotion moves curated data from staging into production tables and views.
 - Production tables and views are the only supported source for the future frontend.
+- GitHub Actions is the official cloud scheduler for the daily backend pipeline.
+- n8n / Umbrella are legacy references only and are not part of the main path.
 
 ## Explicit boundaries
 

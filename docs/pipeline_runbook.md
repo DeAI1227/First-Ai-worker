@@ -23,6 +23,8 @@ on:
 
 GitHub Actions `schedule` triggers now support an IANA timezone. That makes the intent clearer than converting 07:00 Taipei time into UTC by hand.
 
+This is the **official** free cloud scheduler for the project.
+
 Recommended workflow file:
 
 - `.github/workflows/daily-pipeline.yml`
@@ -37,6 +39,11 @@ Recommended secrets:
 - `ingestion --dry-run` reads packets, detects packet types, and maps rows without writing to Supabase.
 - `promotion --dry-run` maps staging-style packets into production-style rows without writing to Supabase.
 - The smoke test uses dry-run-friendly checks to confirm the local pipeline still connects end to end.
+
+## Legacy n8n references
+
+- Any `n8n`-named workflow docs in this repo are historical only.
+- The main automation path now runs through GitHub Actions.
 
 ## How to use write mode
 
