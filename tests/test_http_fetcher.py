@@ -8,6 +8,7 @@ import requests
 from collector.graph import run_collector_task
 from collector.sources import fetch_raw_sources
 from collector.sources import registry as source_registry
+from collector.sources.entrypoints import build_cnyes_category_rules, build_stock_source_rules
 from collector.sources.http_fetcher import fetch_http_sources
 from collector.tasks import make_task
 
@@ -116,6 +117,24 @@ class HttpFetcherTests(unittest.TestCase):
         self.assertEqual(raw_sources, [{"source_type": "http"}])
         mocked_http.assert_called_once()
 
+    def test_source_registry_can_resolve_http_urls_from_stock_source_rules(self):
+        state = {
+            "source_mode": "http",
+            "scope": "stock",
+            "scope_name": "台積電",
+            "target_stock_code": "2330",
+            "target_stock_name": "台積電",
+            "source_rules": build_stock_source_rules("2330", "台積電"),
+        }
+        with patch.object(source_registry, "fetch_http_sources", return_value=[{"source_type": "http"}]) as mocked_http, patch.object(
+            source_registry, "fetch_mock_sources", return_value=[{"source_type": "mock"}]
+        ):
+            raw_sources = fetch_raw_sources(state)
+
+        self.assertEqual(raw_sources, [{"source_type": "http"}])
+        mocked_http.assert_called_once()
+        self.assertEqual(mocked_http.call_args.kwargs["urls"], ["https://tw.stock.yahoo.com/quote/2330.TW/news"])
+
     def test_http_mode_falls_back_to_mock_when_no_urls(self):
         state = {
             "source_mode": "http",
@@ -178,6 +197,168 @@ class HttpFetcherTests(unittest.TestCase):
         self.assertEqual(state["event_packet"]["packet_type"], "event")
         self.assertEqual(state["event_packet"]["collector"], "langgraph")
         self.assertGreater(len(state["raw_sources"]), 0)
+
+    def test_http_fetcher_follows_yahoo_stock_news_list_links(self):
+        task = make_task(scope="stock", scope_name="台積電", stock_code="2330", stock_name="台積電", source_mode="http")
+        state = {"run_errors": []}
+
+        list_response = Mock()
+        list_response.raise_for_status.return_value = None
+        list_response.text = """
+        <!doctype html>
+        <html lang="zh-TW">
+          <head><title>台積電新聞頁</title></head>
+          <body>
+            <a href="https://tw.stock.yahoo.com/news/article-one-1.html">新聞一</a>
+            <a href="/news/article-two-2.html">新聞二</a>
+            <a href="https://example.com/not-news">廣告</a>
+          </body>
+        </html>
+        """
+
+        article_one = Mock()
+        article_one.raise_for_status.return_value = None
+        article_one.text = """
+        <!doctype html>
+        <html lang="zh-TW">
+          <head>
+            <title>新聞一標題</title>
+            <meta property="og:site_name" content="Yahoo Finance">
+            <meta property="article:published_time" content="2026-06-24T08:00:00+08:00">
+          </head>
+          <body>
+            <article><p>第一篇新聞內容，這是一段足夠長、可被系統保留的正式段落，用來驗證抓取流程。</p></article>
+          </body>
+        </html>
+        """
+
+        article_two = Mock()
+        article_two.raise_for_status.return_value = None
+        article_two.text = """
+        <!doctype html>
+        <html lang="zh-TW">
+          <head>
+            <title>新聞二標題</title>
+            <meta property="og:site_name" content="Yahoo Finance">
+          </head>
+          <body>
+            <article><p>第二篇新聞內容，同樣是一段足夠長的正式段落，用來確認列表頁連結可以往下追進文章頁。</p></article>
+          </body>
+        </html>
+        """
+
+        with patch(
+            "collector.sources.http_fetcher.requests.get",
+            side_effect=[list_response, article_one, article_two],
+        ), patch("collector.sources.http_fetcher.BeautifulSoup", None):
+            raw_sources = fetch_http_sources(task, urls=["https://tw.stock.yahoo.com/quote/2330.TW/news"], state=state)
+
+        self.assertEqual(len(raw_sources), 2)
+        self.assertTrue(all(item["source_type"] == "http" for item in raw_sources))
+        self.assertEqual(raw_sources[0]["source_url"], "https://tw.stock.yahoo.com/news/article-one-1.html")
+        self.assertEqual(raw_sources[1]["source_url"], "https://tw.stock.yahoo.com/news/article-two-2.html")
+        self.assertIn("新聞一標題", raw_sources[0]["title"])
+        self.assertIn("新聞二標題", raw_sources[1]["title"])
+
+
+    def test_http_fetcher_follows_cnyes_category_links_and_filters_irrelevant_articles(self):
+        task = make_task(
+            scope="stock",
+            scope_name="???",
+            stock_code="2330",
+            stock_name="???",
+            source_mode="http",
+            search_keywords=["2330", "???", "???"],
+        )
+        state = {"run_errors": []}
+
+        category_response = Mock()
+        category_response.raise_for_status.return_value = None
+        category_response.text = """
+        <!doctype html>
+        <html lang="zh-TW">
+          <body>
+            <a href="/news/id/6501001">article one</a>
+            <a href="https://news.cnyes.com/news/id/6501002">article two</a>
+            <a href="/news/cat/wd_macro">macro category</a>
+            <a href="https://example.com/ad">ad</a>
+          </body>
+        </html>
+        """
+
+        relevant_article = Mock()
+        relevant_article.raise_for_status.return_value = None
+        relevant_article.text = """
+        <!doctype html>
+        <html lang="zh-TW">
+          <head>
+            <title>?????????</title>
+            <meta property="og:site_name" content="???">
+            <meta property="article:published_time" content="2026-06-24T08:00:00+08:00">
+          </head>
+          <body>
+            <article>
+              <p>???????????????????????</p>
+            </article>
+          </body>
+        </html>
+        """
+
+        irrelevant_article = Mock()
+        irrelevant_article.raise_for_status.return_value = None
+        irrelevant_article.text = """
+        <!doctype html>
+        <html lang="zh-TW">
+          <head>
+            <title>??????</title>
+            <meta property="og:site_name" content="???">
+          </head>
+          <body>
+            <article>
+              <p>???????????????</p>
+            </article>
+          </body>
+        </html>
+        """
+
+        with patch(
+            "collector.sources.http_fetcher.requests.get",
+            side_effect=[category_response, relevant_article, irrelevant_article],
+        ), patch("collector.sources.http_fetcher.BeautifulSoup", None):
+            raw_sources = fetch_http_sources(task, urls=["https://news.cnyes.com/news/cat/wd_stock"], state=state)
+
+        self.assertEqual(len(raw_sources), 1)
+        self.assertEqual(raw_sources[0]["source_type"], "http")
+        self.assertEqual(raw_sources[0]["source_url"], "https://news.cnyes.com/news/id/6501001")
+        self.assertIn("???", raw_sources[0]["title"])
+        self.assertTrue(raw_sources[0]["title"])
+
+
+    def test_source_registry_can_resolve_cnyes_urls_from_source_rules(self):
+        state = {
+            "source_mode": "http",
+            "scope": "stock",
+            "scope_name": "???",
+            "target_stock_code": "2330",
+            "target_stock_name": "???",
+            "source_rules": build_cnyes_category_rules("stock", "???"),
+        }
+        with patch.object(source_registry, "fetch_http_sources", return_value=[{"source_type": "http"}]) as mocked_http, patch.object(
+            source_registry, "fetch_mock_sources", return_value=[{"source_type": "mock"}]
+        ):
+            raw_sources = fetch_raw_sources(state)
+
+        self.assertEqual(raw_sources, [{"source_type": "http"}])
+        mocked_http.assert_called_once()
+        self.assertEqual(
+            mocked_http.call_args.kwargs["urls"],
+            [
+                "https://news.cnyes.com/news/cat/tw_quo",
+                "https://news.cnyes.com/news/cat/stock_report",
+                "https://news.cnyes.com/news/cat/tw_revenue",
+                "https://news.cnyes.com/news/cat/wd_stock",
+            ],
+        )
 
 
 if __name__ == "__main__":

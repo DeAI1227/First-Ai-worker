@@ -11,6 +11,7 @@ from collector.config.tracking_universe import (
     stock_industries_for_code,
     topic_keywords,
 )
+from collector.sources.entrypoints import build_cnyes_category_rules, build_stock_source_rules
 
 
 def all_macro_tasks(
@@ -25,7 +26,7 @@ def all_macro_tasks(
         tasks.append(
             build_batch_task(
                 scope="macro",
-                scope_name="大環境",
+                scope_name=topic["topic_name"],
                 run_mode="daily",
                 source_mode=source_mode,
                 summarizer_mode=summarizer_mode,
@@ -35,6 +36,7 @@ def all_macro_tasks(
                 macro_topic_id=topic["topic_id"],
                 macro_topic_key=topic["topic_id"],
                 macro_topic_name=topic["topic_name"],
+                source_rules=build_cnyes_category_rules("macro", topic["topic_name"]),
             )
         )
     return tasks
@@ -49,6 +51,10 @@ def all_industry_tasks(
 ) -> list[dict]:
     tasks: list[dict] = []
     for industry in TRACKING_INDUSTRIES:
+        sample_stock_code = industry.get("sample_stock_code", "")
+        sample_stock_name = industry.get("sample_stock_name", "")
+        source_rules = build_stock_source_rules(sample_stock_code, sample_stock_name) if sample_stock_code else []
+        source_rules.extend(build_cnyes_category_rules(industry["industry_id"], industry["industry_name"]))
         tasks.append(
             build_batch_task(
                 scope="industry",
@@ -63,6 +69,7 @@ def all_industry_tasks(
                 search_provider=search_provider,
                 search_keywords=industry_keywords(industry["industry_name"]),
                 industry_id=industry["industry_id"],
+                source_rules=source_rules,
             )
         )
     return tasks
@@ -92,6 +99,10 @@ def all_stock_tasks(
                 search_provider=search_provider,
                 search_keywords=[stock["stock_code"], stock["stock_name"], *industries],
                 industries=industries,
+                source_rules=[
+                    *build_stock_source_rules(stock["stock_code"], stock["stock_name"]),
+                    *build_cnyes_category_rules("stock", stock["stock_name"]),
+                ],
             )
         )
     return tasks
@@ -120,6 +131,10 @@ def all_institution_watch_tasks(
                 search_keywords=[stock["stock_code"], stock["stock_name"], "大行關注"],
                 institution_watch_code=stock["stock_code"],
                 institution_watch_name=stock["stock_name"],
+                source_rules=[
+                    *build_stock_source_rules(stock["stock_code"], stock["stock_name"]),
+                    *build_cnyes_category_rules("institution", stock["stock_name"]),
+                ],
             )
         )
     return tasks
@@ -224,4 +239,3 @@ __all__ = [
     "all_stock_tasks",
     "generate_batch_tasks",
 ]
-

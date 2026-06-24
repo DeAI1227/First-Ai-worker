@@ -11,8 +11,8 @@ BatchName = Literal["industries", "stocks", "macro", "institution_watch", "all"]
 RunMode = Literal["daily", "three_day"]
 SourceMode = Literal["mock", "rss", "http", "search", "hybrid"]
 SummarizerMode = Literal["mock", "llm", "auto"]
-LlmProvider = Literal["auto", "openai", "gemini", "mock"]
-SearchProvider = Literal["auto", "mock", "tavily", "serpapi"]
+LlmProvider = Literal["auto", "agnes", "gemini", "mock"]
+SearchProvider = Literal["auto", "mock", "tavily", "serpapi", "firecrawl"]
 PacketTypeFilter = Literal["all", "event", "daily_digest", "report", "crawl_run", "rejected_source"]
 
 

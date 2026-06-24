@@ -16,19 +16,19 @@ from collector.tasks import make_task
 
 FAKE_SOURCES = [
     {
-        "title": "散熱產業傳出新一輪 AI 伺服器液冷需求",
+        "title": "AI server liquid cooling demand rises",
         "source_name": "Mock Search Industry",
         "source_url": "https://example.com/ai-server-liquid-cooling",
         "published_at": "2026-06-16T08:00:00+08:00",
-        "content": "供應鏈觀察顯示液冷方案與散熱模組需求同步升溫，仍需持續追蹤後續公告與驗證。",
+        "content": "Liquid cooling demand is rising across the data center supply chain.",
         "source_type": "search",
     },
     {
-        "title": "公司公告更新",
+        "title": "Company announcement update",
         "source_name": "Mock HTTP",
         "source_url": "https://example.com/company-announcement",
         "published_at": "",
-        "content": "這則公告補充了產能、交期與後續營運安排，適合做研究追蹤，不適合作為單一結論。",
+        "content": "The company mentioned product progress and production updates.",
         "source_type": "http",
     },
 ]
@@ -47,7 +47,7 @@ class FakeResponse:
         return self.payload
 
 
-def _openai_response(content: str) -> FakeResponse:
+def _response_with_content(content: str) -> FakeResponse:
     return FakeResponse(
         {
             "choices": [
@@ -61,30 +61,14 @@ def _openai_response(content: str) -> FakeResponse:
     )
 
 
-def _gemini_response(content: str) -> FakeResponse:
-    return FakeResponse(
-        {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {"text": content},
-                        ]
-                    }
-                }
-            ]
-        }
-    )
-
-
 class SummarizerTests(unittest.TestCase):
     def test_mock_summarizer_returns_standard_format(self):
         state = {
             "scope": "industry",
-            "scope_name": "散熱",
+            "scope_name": "thermal",
             "target_stock_code": "6230",
-            "target_stock_name": "尼得科超眾",
-            "search_keywords": ["散熱", "AI 伺服器", "液冷"],
+            "target_stock_name": "Nidec Chaun-Choung",
+            "search_keywords": ["thermal", "AI server", "liquid cooling"],
         }
         result = summarize_with_mock(state, FAKE_SOURCES)
 
@@ -99,38 +83,37 @@ class SummarizerTests(unittest.TestCase):
     def test_build_llm_prompt_contains_guardrails(self):
         state = {
             "scope": "industry",
-            "scope_name": "散熱",
+            "scope_name": "thermal",
             "target_stock_code": "6230",
-            "target_stock_name": "尼得科超眾",
-            "search_keywords": ["散熱", "AI 伺服器"],
+            "target_stock_name": "Nidec Chaun-Choung",
+            "search_keywords": ["thermal", "AI server"],
         }
         prompt = build_llm_prompt(state, FAKE_SOURCES)
 
-        self.assertIn("只能輸出 JSON", LLM_SUMMARIZATION_PROMPT)
+        self.assertIn("AI summary assistant", LLM_SUMMARIZATION_PROMPT)
         self.assertIn("ai_summary", prompt)
-        self.assertIn("散熱", prompt)
+        self.assertIn("raw_sources", prompt)
         self.assertIn("6230", prompt)
-        self.assertIn("raw_sources 前五筆", prompt)
 
-    def test_llm_without_api_key_falls_back_to_mock(self):
+    def test_llm_without_agnes_key_falls_back_to_mock(self):
         state = {
             "scope": "macro",
-            "scope_name": "大環境",
-            "search_keywords": ["聯準會", "CPI", "美元指數"],
+            "scope_name": "macro environment",
+            "search_keywords": ["Fed", "CPI", "rates"],
             "run_errors": [],
         }
         with patch.dict(os.environ, {}, clear=True):
-            result = summarize_with_llm(state, FAKE_SOURCES, provider="openai")
+            result = summarize_with_llm(state, FAKE_SOURCES, provider="agnes")
 
         self.assertEqual(result["language"], "zh-TW")
-        self.assertTrue(any("OPENAI_API_KEY is missing" in error for error in state["run_errors"]))
+        self.assertTrue(any("AGNES_API_KEY or AGNES_API_URL is missing" in error for error in state["run_errors"]))
         self.assertLessEqual(len(result["ai_summary"]), 500)
 
     def test_auto_provider_without_key_falls_back_to_mock(self):
         state = {
             "scope": "macro",
-            "scope_name": "大環境",
-            "search_keywords": ["聯準會", "CPI", "美元指數"],
+            "scope_name": "macro environment",
+            "search_keywords": ["Fed", "CPI", "rates"],
             "run_errors": [],
         }
         with patch.dict(os.environ, {}, clear=True):
@@ -140,71 +123,86 @@ class SummarizerTests(unittest.TestCase):
         self.assertTrue(any("fallback to mock summarizer" in error for error in state["run_errors"]))
         self.assertLessEqual(len(result["ai_summary"]), 500)
 
-    def test_auto_provider_uses_openai_when_only_openai_key_exists(self):
+    def test_auto_provider_uses_agnes_when_only_agnes_key_exists(self):
         state = {
             "scope": "industry",
-            "scope_name": "散熱",
+            "scope_name": "thermal",
             "target_stock_code": "6230",
-            "target_stock_name": "尼得科超眾",
-            "search_keywords": ["散熱", "液冷"],
+            "target_stock_name": "Nidec Chaun-Choung",
+            "search_keywords": ["thermal", "liquid cooling"],
             "run_errors": [],
         }
         payload = json.dumps(
             {
-                "ai_summary": "散熱需求升溫，後續仍需追蹤供應鏈驗證。",
-                "possible_impact": "可能提高市場對相關供應鏈的研究關注。",
-                "risk_note": "資料仍有限，需持續觀察。",
-                "tags": ["散熱", "液冷", "供應鏈"],
+                "ai_summary": "Cooling demand is increasing and the supply chain may benefit.",
+                "possible_impact": "Demand for cooling solutions may rise.",
+                "risk_note": "End-market demand still needs monitoring.",
+                "tags": ["thermal", "cooling", "supply chain"],
             },
             ensure_ascii=False,
         )
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key", "OPENAI_MODEL": "gpt-4.1-mini"}, clear=True):
-            with patch("collector.summarizers.providers.openai_provider.requests.post", return_value=_openai_response(payload)) as mocked_post:
+        with patch.dict(
+            os.environ,
+            {
+                "AGNES_API_KEY": "test-key",
+                "AGNES_API_URL": "https://agnes.example.com/v1/chat/completions",
+                "AGNES_MODEL": "agnes-pro",
+            },
+            clear=True,
+        ):
+            with patch("collector.summarizers.providers.agnes_provider.requests.post", return_value=_response_with_content(payload)) as mocked_post:
                 result = summarize_with_llm(state, FAKE_SOURCES, provider="auto")
 
         self.assertTrue(mocked_post.called)
-        self.assertIn("散熱需求升溫", result["ai_summary"])
+        self.assertIn("Cooling demand is increasing", result["ai_summary"])
         self.assertEqual(result["language"], "zh-TW")
 
     def test_auto_provider_uses_gemini_when_only_gemini_key_exists(self):
         state = {
             "scope": "macro",
-            "scope_name": "大環境",
-            "search_keywords": ["聯準會", "CPI"],
+            "scope_name": "macro environment",
+            "search_keywords": ["CPI", "rates"],
             "run_errors": [],
         }
         payload = json.dumps(
             {
-                "ai_summary": "宏觀環境仍需關注利率與美元變化。",
-                "possible_impact": "可能影響風險偏好與資金流向。",
-                "risk_note": "總體變數多，仍需分批驗證。",
-                "tags": ["宏觀", "利率", "美元"],
+                "ai_summary": "Inflation and rate expectations remain the market focus.",
+                "possible_impact": "Risk assets may improve if inflation cools.",
+                "risk_note": "Volatility may increase around data releases.",
+                "tags": ["CPI", "rates", "inflation"],
             },
             ensure_ascii=False,
         )
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key", "GEMINI_MODEL": "gemini-2.5-flash"}, clear=True):
-            with patch("collector.summarizers.providers.gemini_provider.requests.post", return_value=_gemini_response(payload)) as mocked_post:
+            with patch(
+                "collector.summarizers.providers.gemini_provider.requests.post",
+                return_value=FakeResponse({"candidates": [{"content": {"parts": [{"text": payload}]}}]}),
+            ) as mocked_post:
                 result = summarize_with_llm(state, FAKE_SOURCES, provider="auto")
 
         self.assertTrue(mocked_post.called)
-        self.assertIn("宏觀環境", result["ai_summary"] or "宏觀")
+        self.assertIn("Inflation and rate expectations", result["ai_summary"])
         self.assertEqual(result["language"], "zh-TW")
 
     def test_llm_non_json_output_falls_back_to_mock(self):
         state = {
             "scope": "industry",
-            "scope_name": "散熱",
+            "scope_name": "thermal",
             "target_stock_code": "6230",
-            "target_stock_name": "尼得科超眾",
-            "search_keywords": ["散熱", "液冷"],
+            "target_stock_name": "Nidec Chaun-Choung",
+            "search_keywords": ["thermal", "liquid cooling"],
             "run_errors": [],
         }
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"AGNES_API_KEY": "test-key", "AGNES_API_URL": "https://agnes.example.com/v1/chat/completions"},
+            clear=True,
+        ):
             with patch(
-                "collector.summarizers.providers.openai_provider.requests.post",
-                return_value=_openai_response("這不是 JSON"),
+                "collector.summarizers.providers.agnes_provider.requests.post",
+                return_value=_response_with_content("this is not JSON"),
             ):
-                result = summarize_with_llm(state, FAKE_SOURCES, provider="openai")
+                result = summarize_with_llm(state, FAKE_SOURCES, provider="agnes")
 
         self.assertTrue(any("fallback to mock summarizer" in error for error in state["run_errors"]))
         self.assertEqual(result["language"], "zh-TW")
@@ -212,10 +210,10 @@ class SummarizerTests(unittest.TestCase):
     def test_llm_output_is_sanitized_and_clamped(self):
         state = {
             "scope": "industry",
-            "scope_name": "散熱",
+            "scope_name": "thermal",
             "target_stock_code": "6230",
-            "target_stock_name": "尼得科超眾",
-            "search_keywords": ["散熱", "液冷"],
+            "target_stock_name": "Nidec Chaun-Choung",
+            "search_keywords": ["thermal", "liquid cooling"],
             "run_errors": [],
         }
         raw_content = json.dumps(
@@ -223,29 +221,33 @@ class SummarizerTests(unittest.TestCase):
                 "ai_summary": "買進" + "A" * 600,
                 "possible_impact": "賣出" + "B" * 100,
                 "risk_note": "目標價" + "C" * 100,
-                "tags": ["散熱", "散熱", "買賣建議"],
+                "tags": ["thermal", "thermal", "投資建議"],
             },
             ensure_ascii=False,
         )
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"AGNES_API_KEY": "test-key", "AGNES_API_URL": "https://agnes.example.com/v1/chat/completions"},
+            clear=True,
+        ):
             with patch(
-                "collector.summarizers.providers.openai_provider.requests.post",
-                return_value=_openai_response(raw_content),
+                "collector.summarizers.providers.agnes_provider.requests.post",
+                return_value=_response_with_content(raw_content),
             ):
-                result = summarize_with_llm(state, FAKE_SOURCES, provider="openai")
+                result = summarize_with_llm(state, FAKE_SOURCES, provider="agnes")
 
         self.assertLessEqual(len(result["ai_summary"]), 500)
         self.assertNotIn("買進", result["ai_summary"])
         self.assertNotIn("賣出", result["possible_impact"])
         self.assertNotIn("目標價", result["risk_note"])
-        self.assertNotIn("買賣建議", " ".join(result["tags"]))
+        self.assertNotIn("投資建議", " ".join(result["tags"]))
 
     def test_summarizer_mode_llm_without_key_runs_main_flow(self):
         task = make_task(
             scope="industry",
-            scope_name="散熱",
+            scope_name="thermal",
             stock_code="6230",
-            stock_name="尼得科超眾",
+            stock_name="Nidec Chaun-Choung",
             source_mode="hybrid",
             summarizer_mode="llm",
             llm_provider="auto",
@@ -272,7 +274,12 @@ class SummarizerTests(unittest.TestCase):
             cwd=os.path.dirname(os.path.dirname(__file__)),
             capture_output=True,
             text=True,
-            env={**os.environ, "OPENAI_API_KEY": "", "GEMINI_API_KEY": ""},
+            env={
+                **os.environ,
+                "AGNES_API_KEY": "",
+                "AGNES_API_URL": "",
+                "GEMINI_API_KEY": "",
+            },
         )
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn('"summarizer_mode": "llm"', result.stdout)

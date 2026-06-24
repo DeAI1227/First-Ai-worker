@@ -6,19 +6,25 @@ load_project_env()
 
 import argparse
 import json
+import sys
 
 from collector.batch_runner import run_batch_tasks
 from collector.graph import run_collector_task, run_three_day_report_task
 from collector.tasks import default_tasks, generate_batch_tasks, make_task
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="LangGraph Research Collector Agent MVP")
     parser.add_argument("--mode", choices=["daily", "three_day"], default="daily")
     parser.add_argument("--source-mode", choices=["mock", "rss", "http", "search", "hybrid"], default="mock")
-    parser.add_argument("--search-provider", choices=["auto", "mock", "tavily", "serpapi"], default="auto")
+    parser.add_argument("--search-provider", choices=["auto", "mock", "tavily", "serpapi", "firecrawl"], default="auto")
     parser.add_argument("--summarizer-mode", choices=["mock", "llm"], default="mock")
-    parser.add_argument("--llm-provider", choices=["auto", "openai", "gemini", "mock"], default="auto")
+    parser.add_argument("--llm-provider", choices=["auto", "agnes", "gemini", "mock"], default="auto")
     parser.add_argument("--batch", choices=["industries", "stocks", "macro", "institution_watch", "all"])
     parser.add_argument("--scope", choices=["macro", "industry", "stock", "institution", "institution_watch"])
     parser.add_argument("--scope-name")

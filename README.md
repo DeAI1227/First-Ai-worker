@@ -40,6 +40,31 @@ LangGraph / Collector
 - `docs/` - deployment, audit, and runbook documents
 - `n8n_workflows/` - legacy workflow templates kept for reference
 
+## 搜尋來源
+
+目前搜尋層的正式免費路線是 **Firecrawl self-host**。
+
+- 預設 `SEARCH_PROVIDER=firecrawl`
+- 需要先啟動你自己的 Firecrawl 服務
+- 後端透過 `FIRECRAWL_BASE_URL` 連到 Firecrawl 的 `/v2/search`
+- Firecrawl 不可用時，搜尋層會安全 fallback 到 mock，不會讓主流程假成功
+
+### Firecrawl 建議設定
+
+```env
+FIRECRAWL_BASE_URL=http://localhost:3002
+FIRECRAWL_API_KEY=
+SEARCH_PROVIDER=firecrawl
+```
+
+### 自架 Firecrawl
+
+如果你要本機跑 Firecrawl，請看：
+
+- [Firecrawl self-hosting guide](docs/firecrawl_self_hosting.md)
+
+> 這條路線是免費的，但你要自己維護 Firecrawl 服務。它是搜尋與抓取工具，不是前端資料來源。
+
 ## 跟蹤宇宙
 
 MVP 追蹤宇宙包含：
@@ -175,6 +200,10 @@ python -m compileall .
 - `VITE_SUPABASE_ANON_KEY`
 
 LLM / Search providers 可先選填，沒有就 fallback mock。
+
+- `FIRECRAWL_BASE_URL`
+- `FIRECRAWL_API_KEY`
+- `SEARCH_PROVIDER=firecrawl`
 
 ### 排程器
 

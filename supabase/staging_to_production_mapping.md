@@ -91,8 +91,8 @@ Collector output JSON
 | `scope_name` | `scope_name` | Scope display name |
 | `source_mode` | `source_mode` | `mock`, `rss`, `http`, `search`, `hybrid` |
 | `summarizer_mode` | `summarizer_mode` | `mock`, `llm` |
-| `llm_provider` | `llm_provider` | `mock`, `openai`, `gemini`, `auto` |
-| `search_provider` | `search_provider` | `mock`, `tavily`, `serpapi`, `auto` |
+| `llm_provider` | `llm_provider` | `mock`, `agnes`, `gemini`, `auto` |
+| `search_provider` | `search_provider` | `mock`, `tavily`, `serpapi`, `firecrawl`, `auto` |
 | `total_sources_count` | `total_sources_count` | Total sources |
 | `accepted_sources_count` | `accepted_sources_count` | Accepted sources |
 | `rejected_sources_count` | `rejected_sources_count` | Rejected sources |

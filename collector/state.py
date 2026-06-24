@@ -17,6 +17,7 @@ class CollectorState(TypedDict, total=False):
     search_keywords: list[str]
     search_provider: str
     raw_sources: list[dict[str, Any]]
+    source_rules: list[dict[str, Any]]
     scored_sources: list[dict[str, Any]]
     rejected_sources: list[dict[str, Any]]
     quality_summary: dict[str, int]

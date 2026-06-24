@@ -5,6 +5,7 @@ import os
 from typing import Any
 
 from collector.sources.search.base_provider import SearchProviderError, SearchProviderUnavailableError
+from collector.sources.search.firecrawl_provider import FirecrawlProvider
 from collector.sources.search.mock_search_provider import MockSearchProvider
 from collector.sources.search.serpapi_provider import SerpApiProvider
 from collector.sources.search.tavily_provider import TavilyProvider
@@ -12,6 +13,7 @@ from collector.sources.search.tavily_provider import TavilyProvider
 
 SEARCH_PROVIDER_REGISTRY: dict[str, Callable[[], Any]] = {
     "mock": MockSearchProvider,
+    "firecrawl": FirecrawlProvider,
     "tavily": TavilyProvider,
     "serpapi": SerpApiProvider,
 }
@@ -24,7 +26,7 @@ def resolve_search_provider_name(requested: str | None, state: dict[str, Any] | 
         or os.getenv("SEARCH_PROVIDER", "")
         or "auto"
     ).strip().lower()
-    if candidate in {"mock", "tavily", "serpapi"}:
+    if candidate in {"mock", "firecrawl", "tavily", "serpapi"}:
         return candidate
     return "auto"
 
@@ -32,10 +34,9 @@ def resolve_search_provider_name(requested: str | None, state: dict[str, Any] | 
 def select_search_provider(requested: str | None, state: dict[str, Any] | None = None) -> tuple[str, Any]:
     provider_name = resolve_search_provider_name(requested, state)
     if provider_name == "auto":
-        if TavilyProvider().is_available():
-            return "tavily", TavilyProvider()
-        if SerpApiProvider().is_available():
-            return "serpapi", SerpApiProvider()
+        firecrawl = FirecrawlProvider()
+        if firecrawl.is_available():
+            return "firecrawl", firecrawl
         return "mock", MockSearchProvider()
 
     provider_class = SEARCH_PROVIDER_REGISTRY.get(provider_name, MockSearchProvider)

@@ -115,8 +115,8 @@ Use this mapping when writing crawl run packets into `staging_crawl_runs`.
 | `scope_name` | `scope_name` | Human-readable scope name. |
 | `source_mode` | `source_mode` | `mock`, `rss`, `http`, `search`, or `hybrid`. |
 | `summarizer_mode` | `summarizer_mode` | `mock` or `llm`. |
-| `llm_provider` | `llm_provider` | `mock`, `openai`, `gemini`, or `auto`. |
-| `search_provider` | `search_provider` | `mock`, `tavily`, `serpapi`, or `auto`. |
+| `llm_provider` | `llm_provider` | `mock`, `agnes`, `gemini`, or `auto`. |
+| `search_provider` | `search_provider` | `mock`, `tavily`, `serpapi`, `firecrawl`, or `auto`. |
 | `total_sources_count` | `total_sources_count` | Total collected sources. |
 | `accepted_sources_count` | `accepted_sources_count` | Sources that passed quality filtering. |
 | `rejected_sources_count` | `rejected_sources_count` | Sources that were rejected. |

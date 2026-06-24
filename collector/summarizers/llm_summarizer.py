@@ -15,24 +15,25 @@ from collector.summarizers.base import (
     source_overview,
 )
 from collector.summarizers.mock_summarizer import summarize_with_mock
-from collector.summarizers.providers import GeminiProvider, OpenAIProvider
+from collector.summarizers.providers import AgnesProvider, GeminiProvider
 
-LLM_SUMMARIZATION_PROMPT = """你是 AI 投資研究終端的摘要器。
-請根據 raw_sources 產出適合研究終端使用的結構化 JSON。
+LLM_SUMMARIZATION_PROMPT = """你是一個投資研究摘要助手 (AI summary assistant)。
+請根據 raw_sources 產出繁體中文 JSON，且只能輸出以下欄位：
+- ai_summary
+- possible_impact
+- risk_note
+- tags
 
-輸出規則：
-1. 只能輸出 JSON，不能加 markdown、解釋文字或前言。
-2. 必須包含欄位：ai_summary、possible_impact、risk_note、tags。
-3. ai_summary 必須是繁體中文，且不超過 500 字。
-4. possible_impact 只能描述可能影響，不要寫買賣建議。
-5. risk_note 需保留不確定性與風險。
-6. tags 建議 3 到 8 個，使用研究主題關鍵詞。
-7. 禁止出現以下詞彙：
-   買進、賣出、目標價、報酬率、喊單、飆股、漲停、買賣建議、投資建議、技術分析、K線、成交量、買賣訊號
-8. 若資訊不足，請如實說明，不要補造結論。
+規則：
+1. 不要輸出 markdown、不要輸出多餘解釋。
+2. ai_summary 必須在 500 字內。
+3. possible_impact 只描述可能影響，不要做買賣建議。
+4. risk_note 必須保留不確定性。
+5. tags 需提供 3 到 8 個關鍵詞。
+6. 不要出現「買進、賣出、目標價、報酬率、飆股、漲停、喊單、投資建議」等詞。
 """
 
-SUPPORTED_LLM_PROVIDERS = {"auto", "openai", "gemini", "mock"}
+SUPPORTED_LLM_PROVIDERS = {"auto", "agnes", "gemini", "mock"}
 
 
 def summarize_with_llm(
@@ -76,20 +77,20 @@ def build_llm_prompt(state: dict[str, Any], sources: list[dict[str, Any]]) -> st
 
     return (
         f"{LLM_SUMMARIZATION_PROMPT}\n\n"
-        f"任務背景:\n"
+        f"任務資訊:\n"
         f"- scope: {scope}\n"
         f"- scope_name: {scope_name}\n"
         f"- target_stock_code: {stock_code}\n"
         f"- target_stock_name: {stock_name}\n"
         f"- search_keywords: {keywords}\n\n"
         f"來源總覽:\n{overview}\n\n"
-        f"raw_sources 前五筆:\n{source_lines or '(無)'}\n"
+        f"raw_sources 範例:\n{source_lines or '(none)'}\n"
     )
 
 
 def _build_provider(provider_name: str):
-    if provider_name == "openai":
-        return OpenAIProvider()
+    if provider_name == "agnes":
+        return AgnesProvider()
     if provider_name == "gemini":
         return GeminiProvider()
     return None
@@ -106,13 +107,13 @@ def _select_provider(requested_provider: str) -> str:
     if requested_provider == "mock":
         return "mock"
     if requested_provider == "auto":
-        if OpenAIProvider().is_available():
-            return "openai"
+        if AgnesProvider().is_available():
+            return "agnes"
         if GeminiProvider().is_available():
             return "gemini"
         return "mock"
-    if requested_provider == "openai":
-        return "openai" if OpenAIProvider().is_available() else "mock"
+    if requested_provider == "agnes":
+        return "agnes" if AgnesProvider().is_available() else "mock"
     if requested_provider == "gemini":
         return "gemini" if GeminiProvider().is_available() else "mock"
     return "mock"
@@ -121,8 +122,8 @@ def _select_provider(requested_provider: str) -> str:
 def _fallback_reason(requested_provider: str) -> str:
     if requested_provider == "auto":
         return "LLM summarizer requested but no API key found; fallback to mock summarizer."
-    if requested_provider == "openai":
-        return "OPENAI_API_KEY is missing; fallback to mock summarizer."
+    if requested_provider == "agnes":
+        return "AGNES_API_KEY or AGNES_API_URL is missing; fallback to mock summarizer."
     if requested_provider == "gemini":
         return "GEMINI_API_KEY is missing; fallback to mock summarizer."
     return ""
@@ -199,7 +200,8 @@ def _normalize_tags(value: Any) -> list[str]:
     if isinstance(value, list):
         tags = [sanitize_text(clean_text(item)) for item in value if sanitize_text(clean_text(item))]
     elif isinstance(value, str):
-        tags = [sanitize_text(clean_text(item)) for item in re.split(r"[,\n、/|]+", value) if sanitize_text(clean_text(item))]
+        parts = re.split(r"[,\n|、]+", value)
+        tags = [sanitize_text(clean_text(item)) for item in parts if sanitize_text(clean_text(item))]
     else:
         tags = []
     return dedupe_preserve_order(tags)

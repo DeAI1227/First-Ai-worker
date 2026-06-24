@@ -6,6 +6,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
+import main as cli_main
 from collector.graph import run_collector_task
 from collector.nodes.filter import filter_sources
 from collector.sources import fetch_raw_sources
@@ -76,7 +77,7 @@ class SearchProviderTests(unittest.TestCase):
             {
                 "title": "A duplicate",
                 "source_name": "Mock Search",
-                "source_url": "https://example.com/a",
+                "source_url": "https://example.com/a?bcmt=1&utm_source=test",
                 "published_at": "",
                 "content": "A duplicate content",
                 "source_type": "search",
@@ -103,6 +104,34 @@ class SearchProviderTests(unittest.TestCase):
 
         self.assertEqual(raw_sources, [{"source_type": "search"}])
         mocked_search.assert_called_once()
+
+    def test_source_registry_passes_source_rules_into_search_task(self):
+        source_rules = [
+            {
+                "kind": "yahoo_stock_news",
+                "name": "Yahoo news",
+                "url": "https://tw.stock.yahoo.com/quote/6230.TW/news",
+                "stock_code": "6230",
+                "stock_name": "test-stock",
+            }
+        ]
+        state = {
+            "source_mode": "search",
+            "scope": "industry",
+            "scope_name": "industry",
+            "source_rules": source_rules,
+            "search_keywords": ["industry", "AI cooling"],
+            "search_provider": "mock",
+        }
+        with patch.object(source_registry, "fetch_search_sources", return_value=[{"source_type": "search"}]) as mocked_search, patch.object(
+            source_registry, "fetch_mock_sources", return_value=[{"source_type": "mock"}]
+        ):
+            fetch_raw_sources(state)
+
+        mocked_search.assert_called_once()
+        forwarded_task = mocked_search.call_args.args[0]
+        self.assertEqual(forwarded_task.get("source_rules"), source_rules)
+
 
     def test_hybrid_mode_tries_search_after_rss_http_empty(self):
         state = {
@@ -183,10 +212,17 @@ class SearchProviderTests(unittest.TestCase):
             ],
             cwd=os.path.dirname(os.path.dirname(__file__)),
             capture_output=True,
-            text=True,
+            text=False,
         )
         self.assertEqual(result.returncode, 0, msg=result.stderr)
-        self.assertIn('"search_provider": "mock"', result.stdout)
+        stdout = result.stdout.decode("utf-8", errors="replace")
+        self.assertIn('"search_provider": "mock"', stdout)
+
+    def test_search_mode_cli_accepts_firecrawl_provider(self):
+        with patch.object(sys, "argv", ["main.py", "--search-provider", "firecrawl"]):
+            args = cli_main.parse_args()
+
+        self.assertEqual(args.search_provider, "firecrawl")
 
 
 if __name__ == "__main__":
