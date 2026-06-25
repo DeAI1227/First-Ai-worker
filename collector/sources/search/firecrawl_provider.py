@@ -15,17 +15,16 @@ class FirecrawlProvider(BaseSearchProvider):
     provider_name = "firecrawl"
     base_url_env = "FIRECRAWL_BASE_URL"
     api_key_env = "FIRECRAWL_API_KEY"
+    default_base_url = "https://api.firecrawl.dev"
     default_timeout_seconds = 20
     default_limit = 10
     default_keyword_limit = 3
 
     def get_base_url(self) -> str:
-        import os
-
-        return clean_text(os.getenv(self.base_url_env, ""))
+        return _read_base_url_env() or self.default_base_url
 
     def is_available(self) -> bool:
-        return bool(self.get_base_url())
+        return bool(self.get_api_key() or _read_base_url_env())
 
     def search(self, task: dict[str, Any], keywords: list[str], state: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         base_url = self.get_base_url()
@@ -57,8 +56,9 @@ class FirecrawlProvider(BaseSearchProvider):
             headers = {
                 "Content-Type": "application/json",
                 "User-Agent": "Mozilla/5.0 (Firecrawl Search Provider)",
-                "Authorization": f"Bearer {api_key or 'local-firecrawl'}",
             }
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
 
             try:
                 response = requests.post(
@@ -112,6 +112,12 @@ class FirecrawlProvider(BaseSearchProvider):
 
 def _build_search_endpoint(base_url: str) -> str:
     return f"{base_url.rstrip('/')}/v2/search"
+
+
+def _read_base_url_env() -> str:
+    import os
+
+    return clean_text(os.getenv(FirecrawlProvider.base_url_env, ""))
 
 
 def _resolve_timeout_seconds(state: dict[str, Any] | None) -> float:

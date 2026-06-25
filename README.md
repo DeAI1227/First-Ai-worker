@@ -42,28 +42,26 @@ LangGraph / Collector
 
 ## 搜尋來源
 
-目前搜尋層的正式免費路線是 **Firecrawl self-host**。
+目前搜尋層的正式主線是 **Firecrawl Hosted API**。
 
-- 預設 `SEARCH_PROVIDER=firecrawl`
-- 需要先啟動你自己的 Firecrawl 服務
-- 後端透過 `FIRECRAWL_BASE_URL` 連到 Firecrawl 的 `/v2/search`
+- 預設可使用 `SEARCH_PROVIDER=firecrawl`
+- 後端透過 `FIRECRAWL_BASE_URL` 連到 Firecrawl 的 hosted `/v2/search`
+- 建議提供 `FIRECRAWL_API_KEY`；若未提供，是否能使用取決於 Firecrawl 當下提供的 keyless/free tier 能力
 - Firecrawl 不可用時，搜尋層會安全 fallback 到 mock，不會讓主流程假成功
 
-### Firecrawl 建議設定
+### Firecrawl Hosted API 建議設定
 
 ```env
-FIRECRAWL_BASE_URL=http://localhost:3002
+FIRECRAWL_BASE_URL=https://api.firecrawl.dev
 FIRECRAWL_API_KEY=
 SEARCH_PROVIDER=firecrawl
 ```
 
-### 自架 Firecrawl
+### Firecrawl 使用說明
 
-如果你要本機跑 Firecrawl，請看：
+- [Firecrawl hosted API guide](docs/firecrawl_hosted_api.md)
 
-- [Firecrawl self-hosting guide](docs/firecrawl_self_hosting.md)
-
-> 這條路線是免費的，但你要自己維護 Firecrawl 服務。它是搜尋與抓取工具，不是前端資料來源。
+> Firecrawl 現在被視為外部搜尋/抓取供應商，不再是本專案需要自架與維護的核心基礎設施。
 
 ## 跟蹤宇宙
 

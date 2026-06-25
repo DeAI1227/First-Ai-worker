@@ -37,6 +37,8 @@ class BatchRegistryCliTests(unittest.TestCase):
             cwd=self.project_root,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
         self.assertEqual(result.returncode, 0, msg=result.stderr)
 
@@ -46,6 +48,8 @@ class BatchRegistryCliTests(unittest.TestCase):
             cwd=self.project_root,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
         )
         self.assertEqual(result.returncode, 0, msg=result.stderr)
 

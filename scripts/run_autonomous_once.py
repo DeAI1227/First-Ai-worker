@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 from contextlib import ExitStack
@@ -28,13 +29,20 @@ from promotion import packet_promoter as packet_promoter_module
 from promotion import promotion_report as promotion_report_module
 
 
+def _env_flag(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def run_autonomous_once() -> dict[str, Any]:
     request = PipelineRunRequest(
-        scope="all",
-        source_mode="hybrid",
-        summarizer_mode="auto",
-        ingestion_dry_run=False,
-        promotion_dry_run=False,
+        scope=os.getenv("AUTONOMOUS_SCOPE", "all"),
+        source_mode=os.getenv("AUTONOMOUS_SOURCE_MODE", "hybrid"),
+        summarizer_mode=os.getenv("AUTONOMOUS_SUMMARIZER_MODE", "auto"),
+        ingestion_dry_run=_env_flag("AUTONOMOUS_INGESTION_DRY_RUN", False),
+        promotion_dry_run=_env_flag("AUTONOMOUS_PROMOTION_DRY_RUN", False),
     )
     with tempfile.TemporaryDirectory(prefix="first_ai_worker_autonomous_") as tmpdir:
         output_root = Path(tmpdir) / "output"

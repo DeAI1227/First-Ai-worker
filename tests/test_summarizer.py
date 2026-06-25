@@ -274,6 +274,8 @@ class SummarizerTests(unittest.TestCase):
             cwd=os.path.dirname(os.path.dirname(__file__)),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="ignore",
             env={
                 **os.environ,
                 "AGNES_API_KEY": "",
@@ -282,7 +284,7 @@ class SummarizerTests(unittest.TestCase):
             },
         )
         self.assertEqual(result.returncode, 0, msg=result.stderr)
-        self.assertIn('"summarizer_mode": "llm"', result.stdout)
+        self.assertIn('"summarizer_mode": "llm"', result.stdout or "")
 
 
 if __name__ == "__main__":

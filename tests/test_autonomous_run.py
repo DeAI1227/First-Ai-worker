@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.run_autonomous_once import run_autonomous_once
 
@@ -17,7 +19,17 @@ class AutonomousRunTests(unittest.TestCase):
         self.assertTrue((self.project_root / "scripts" / "run_autonomous_once.py").exists())
 
     def test_autonomous_runner_returns_required_flags(self) -> None:
-        result = run_autonomous_once()
+        with patch.dict(
+            os.environ,
+            {
+                "SEARCH_PROVIDER": "mock",
+                "AUTONOMOUS_SCOPE": "industries",
+                "AUTONOMOUS_SOURCE_MODE": "mock",
+                "AUTONOMOUS_SUMMARIZER_MODE": "mock",
+            },
+            clear=False,
+        ):
+            result = run_autonomous_once()
         self.assertIn(result["status"], {"success", "partial_success", "failed"})
         self.assertIn(result["autonomous_ready"], {True, False})
         self.assertIn(result["collect_ran"], {True, False})
@@ -27,12 +39,18 @@ class AutonomousRunTests(unittest.TestCase):
         self.assertIsInstance(result["errors"], list)
 
     def test_autonomous_runner_cli_prints_summary_fields(self) -> None:
+        env = os.environ.copy()
+        env["SEARCH_PROVIDER"] = "mock"
+        env["AUTONOMOUS_SCOPE"] = "industries"
+        env["AUTONOMOUS_SOURCE_MODE"] = "mock"
+        env["AUTONOMOUS_SUMMARIZER_MODE"] = "mock"
         completed = subprocess.run(
             ["python", "scripts/run_autonomous_once.py"],
             cwd=self.project_root,
             capture_output=True,
             text=True,
             check=False,
+            env=env,
         )
         self.assertIn(completed.returncode, {0, 1})
         stdout = completed.stdout + completed.stderr
@@ -43,12 +61,18 @@ class AutonomousRunTests(unittest.TestCase):
         self.assertIn("status", stdout)
 
     def test_autonomous_runner_output_json_is_valid(self) -> None:
+        env = os.environ.copy()
+        env["SEARCH_PROVIDER"] = "mock"
+        env["AUTONOMOUS_SCOPE"] = "industries"
+        env["AUTONOMOUS_SOURCE_MODE"] = "mock"
+        env["AUTONOMOUS_SUMMARIZER_MODE"] = "mock"
         completed = subprocess.run(
             ["python", "scripts/run_autonomous_once.py"],
             cwd=self.project_root,
             capture_output=True,
             text=True,
             check=False,
+            env=env,
         )
         self.assertIn(completed.returncode, {0, 1})
         parsed = json.loads(completed.stdout.strip())
