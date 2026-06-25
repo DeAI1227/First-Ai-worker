@@ -22,7 +22,7 @@ class SupabaseSSLSafetyTests(TestCase):
         self.assertIn("ENVIRONMENT=development", text)
         self.assertIn("ALLOW_INSECURE_SSL=false", text)
         self.assertIn("SUPABASE_CA_BUNDLE=", text)
-        self.assertIn("正式環境不得設定 ALLOW_INSECURE_SSL=true", text)
+        self.assertIn("Production must not set ALLOW_INSECURE_SSL=true", text)
 
     def test_ingestion_supabase_client_uses_custom_ca_bundle(self) -> None:
         session = Mock()

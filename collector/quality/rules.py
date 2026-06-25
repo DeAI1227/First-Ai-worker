@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from collector.constants import PROHIBITED_TERMS as PROJECT_PROHIBITED_TERMS
 
 HIGH_LEVEL_MIN = 80
@@ -14,11 +16,11 @@ QUALITY_PROHIBITED_TERMS = [
     "漲停",
     "飆股",
     "喊單",
-    "技術分析",
-    "K線",
-    "成交量",
-    "投資建議",
     "買賣建議",
+    "投資建議",
+    "技術分析",
+    "k線",
+    "成交量",
 ]
 
 SUSPICIOUS_SIGNAL_TERMS = [
@@ -38,12 +40,11 @@ RESEARCH_TERMS = [
     "產業",
     "供應鏈",
     "政策",
+    "法說",
     "公告",
-    "驗證",
-    "出貨",
-    "需求",
-    "報告",
-    "分析",
+    "資料中心",
+    "財報",
+    "營收",
     "execution",
 ]
 
@@ -55,10 +56,32 @@ OFFICIAL_SOURCE_TERMS = [
     "company",
     "press release",
     "announcement",
-    "news",
-    "bloomberg",
+    "公開資訊觀測站",
+    "證交所",
+    "櫃買中心",
+    "經濟部",
     "reuters",
-    "bbc",
+    "bloomberg",
+]
+
+QUOTE_BULLETIN_TERMS = [
+    "盤中速報",
+    "股價",
+    "報價",
+    "漲幅",
+    "跌幅",
+    "收盤",
+    "開盤",
+    "盤中",
+    "大漲",
+    "大跌",
+]
+
+QUOTE_BULLETIN_PATTERNS = [
+    re.compile(r"報\s*\d+(?:\.\d+)?\s*元"),
+    re.compile(r"\d+(?:\.\d+)?\s*%"),
+    re.compile(r"漲\d+(?:\.\d+)?%"),
+    re.compile(r"跌\d+(?:\.\d+)?%"),
 ]
 
 
@@ -76,3 +99,8 @@ def is_suspicious_signal(text: str) -> bool:
     lowered = text.lower()
     return any(term.lower() in lowered for term in SUSPICIOUS_SIGNAL_TERMS)
 
+
+def is_quote_style_bulletin(text: str) -> bool:
+    if any(term in text for term in QUOTE_BULLETIN_TERMS):
+        return True
+    return any(pattern.search(text) for pattern in QUOTE_BULLETIN_PATTERNS)

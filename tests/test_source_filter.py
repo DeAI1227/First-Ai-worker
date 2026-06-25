@@ -46,6 +46,26 @@ class SourceFilterTests(unittest.TestCase):
         filtered_state = filter_sources(state)
         self.assertEqual(filtered_state["filtered_sources"], [])
 
+    def test_filter_sources_blocks_quote_style_bulletins(self):
+        state = {
+            "scope": "industry",
+            "scope_name": "散熱",
+            "target_stock_code": "6230",
+            "target_stock_name": "尼得科超眾",
+            "raw_sources": [
+                {
+                    "title": "盤中速報- 尼得科超眾(6230)大漲7.01%，報168元",
+                    "source_name": "Yahoo股市",
+                    "source_url": "https://example.com/quote-bulletin",
+                    "published_at": "2026-06-25T10:00:00+08:00",
+                    "content": "盤中股價快速上漲，最新報價168元，漲幅7.01%。",
+                    "source_type": "search",
+                }
+            ],
+        }
+        filtered_state = filter_sources(state)
+        self.assertEqual(filtered_state["filtered_sources"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

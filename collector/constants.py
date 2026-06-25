@@ -3,10 +3,9 @@ from __future__ import annotations
 from collector.config.tracking_universe import (
     INSTITUTION_WATCH_STOCKS,
     TRACKED_STOCKS,
-    TRACKING_MACRO_TOPICS,
     TRACKING_INDUSTRIES,
+    TRACKING_MACRO_TOPICS,
 )
-
 
 VALID_INDUSTRIES = [item["industry_name"] for item in TRACKING_INDUSTRIES]
 
@@ -52,12 +51,12 @@ PROHIBITED_TERMS = [
 SCOPE_DIR_NAMES = {
     "macro": "大環境",
     "industry": "產業",
-    "stock": "股票",
+    "stock": "個股",
     "institution": "大行關注",
+    "institution_watch": "大行關注",
 }
 
 MACRO_TOPICS = [item["key"] for item in TRACKING_MACRO_TOPICS]
 
 DEFAULT_LANGUAGE = "zh-TW"
 COLLECTOR_NAME = "langgraph"
-

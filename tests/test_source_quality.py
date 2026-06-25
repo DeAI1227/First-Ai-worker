@@ -65,6 +65,23 @@ class SourceQualityScoringTests(unittest.TestCase):
         self.assertEqual(scored[0]["quality_level"], "rejected")
         self.assertTrue(scored[0]["quality_reasons"])
 
+    def test_quote_style_bulletin_is_rejected(self):
+        sources = [
+            {
+                "title": "盤中速報- 尼得科超眾(6230)大漲7.01%，報168元",
+                "source_name": "Yahoo股市",
+                "source_url": "https://example.com/quote-bulletin",
+                "published_at": "2026-06-25T10:00:00+08:00",
+                "content": "盤中股價快速上漲，最新報價168元，漲幅7.01%。",
+                "source_type": "search",
+            }
+        ]
+        scored = score_sources(sources, self.task, self.task)
+        self.assertEqual(scored[0]["quality_level"], "rejected")
+        self.assertTrue(
+            any("quote-style" in reason or "stock price bulletin" in reason for reason in scored[0]["quality_reasons"])
+        )
+
     def test_duplicate_source_url_keeps_only_one(self):
         sources = [
             {

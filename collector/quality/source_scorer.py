@@ -8,6 +8,7 @@ from collector.quality.rules import (
     MEDIUM_LEVEL_MIN,
     OFFICIAL_SOURCE_TERMS,
     RESEARCH_TERMS,
+    is_quote_style_bulletin,
     is_prohibited_text,
     is_suspicious_signal,
 )
@@ -126,6 +127,10 @@ def _score_single_source(
 
     if is_suspicious_signal(combined_text):
         reasons.append("suspicious buy/sell or price-target style content")
+        rejected = True
+
+    if is_quote_style_bulletin(combined_text):
+        reasons.append("contains stock price bulletin / quote-style content")
         rejected = True
 
     if not source_name:
