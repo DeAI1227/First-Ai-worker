@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { RefreshCcw, Sparkles } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { getSystemSnapshot } from "@/lib/queries";
 import { getStoredUserId } from "@/lib/user";
@@ -30,7 +30,7 @@ export function DashboardPage() {
         </Button>
       }
     >
-      {loading ? <LoadingState label="正在同步 Supabase production views…" /> : null}
+      {loading ? <LoadingState label="正在讀取 Supabase production views..." /> : null}
       {error ? <ErrorState description={error} onRetry={reload} /> : null}
 
       {data ? (
@@ -59,14 +59,14 @@ export function DashboardPage() {
 
               <Card className="space-y-4">
                 <SectionHeader
-                title="??????"
-                description="??????????? user_read_status??"
-                action={
-                  <div className="rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-white/60">
-                    {data.unreadCounts.unread_total_count} ?????
-                  </div>
-                }
-              />
+                  title="未讀狀態"
+                  description="未讀統計來自 user_read_status。"
+                  action={
+                    <div className="rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-white/60">
+                      {data.unreadCounts.unread_total_count} 筆未讀
+                    </div>
+                  }
+                />
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
@@ -78,7 +78,7 @@ export function DashboardPage() {
                     <div className="mt-1 text-xl font-semibold text-white">{data.unreadCounts.unread_report_count}</div>
                   </div>
                   <div className="rounded-2xl border border-accent/15 bg-accent/10 p-3">
-                    <div className="text-[11px] text-white/42">使用者</div>
+                    <div className="text-[11px] text-white/42">使用者 ID</div>
                     <div className="mt-1 text-sm font-medium text-white/90 break-all">{data.unreadCounts.user_id}</div>
                   </div>
                 </div>
@@ -87,13 +87,13 @@ export function DashboardPage() {
 
             <Card className="space-y-4">
               <SectionHeader
-                title="最近事件"
-                description="事件卡片按照 critical / important / general 的優先度展示。"
+                title="最近重要事件"
+                description="依重要性分層顯示 critical / important / general 的最新研究事件。"
               />
               <div className="space-y-4">
                 {data.dashboardEvents.length === 0 ? (
                   <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-6 text-center text-sm text-white/46">
-                    目前沒有事件，請稍後再回來查看。
+                    目前還沒有可顯示的事件，之後有新資料會出現在這裡。
                   </div>
                 ) : (
                   data.dashboardEvents.slice(0, 4).map((event) => (
@@ -113,11 +113,11 @@ export function DashboardPage() {
             />
 
             <Card className="space-y-4">
-              <SectionHeader title="最近研究報告" description="報告是研究輸出，不是行情摘要。" />
+              <SectionHeader title="最近研究報告" description="顯示最近整理出的三日報告與研究摘要。" />
               <div className="space-y-3">
                 {data.reports.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/46">
-                    暫時沒有報告。
+                    目前還沒有研究報告。
                   </div>
                 ) : (
                   data.reports.slice(0, 3).map((report) => (
@@ -132,12 +132,12 @@ export function DashboardPage() {
             </Card>
 
             <Card className="space-y-4">
-              <SectionHeader title="系統提示" description="這個前端只讀 Supabase production views。" />
+              <SectionHeader title="系統定位" description="目前前端只讀 Supabase production views。" />
               <div className="space-y-3 text-sm leading-6 text-white/55">
-                <p>• 不讀 Python 程式。</p>
-                <p>• 不讀 output JSON。</p>
-                <p>• 不直接呼叫 Collector。</p>
-                <p>• 股票無事件時由前端顯示 empty state。</p>
+                <p>前端不直接讀 Python 專案。</p>
+                <p>前端不直接讀 output JSON。</p>
+                <p>前端不直接呼叫 Collector。</p>
+                <p>沒有事件的股票由前端顯示 empty state。</p>
               </div>
             </Card>
           </div>

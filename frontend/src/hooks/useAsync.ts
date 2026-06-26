@@ -33,7 +33,7 @@ export function useAsync<T>(
         }
       } catch (err) {
         if (mounted) {
-          setError(err instanceof Error ? err.message : "資料載入失敗");
+          setError(err instanceof Error ? err.message : "資料載入失敗，請稍後再試。");
         }
       } finally {
         if (mounted) {

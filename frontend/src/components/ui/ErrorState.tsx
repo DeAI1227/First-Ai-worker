@@ -8,7 +8,7 @@ type Props = {
 };
 
 export function ErrorState({
-  title = "資料載入失敗",
+  title = "載入失敗",
   description,
   onRetry,
 }: Props) {
@@ -24,7 +24,7 @@ export function ErrorState({
           {onRetry ? (
             <div className="mt-4">
               <Button tone="secondary" onClick={onRetry}>
-                重試載入
+                重新載入
               </Button>
             </div>
           ) : null}
