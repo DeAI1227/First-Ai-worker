@@ -17,7 +17,7 @@ export function QualitySummaryMini({ summary, className = "" }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.22em] text-white/38">資料品質摘要</div>
-          <div className="mt-1 text-lg font-semibold text-white">來源品質健康度</div>
+          <div className="mt-1 text-lg font-semibold text-white">來源品質分布</div>
         </div>
         <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2 text-right">
           <div className="text-[11px] text-white/45">總來源</div>

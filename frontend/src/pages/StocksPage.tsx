@@ -16,7 +16,7 @@ export function StocksPage() {
   return (
     <PageFrame
       title="股票清單"
-      subtitle="45 檔追蹤股票都會出現在這裡，即使當天沒有事件也仍然保留在 reference data。"
+      subtitle="這裡的股票來自 reference data。即使今天沒有事件，股票仍然會出現在清單裡。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -24,12 +24,12 @@ export function StocksPage() {
         </Button>
       }
     >
-      {loading ? <LoadingState label="正在載入 45 檔追蹤股票…" /> : null}
+      {loading ? <LoadingState label="正在載入追蹤股票清單…" /> : null}
       {error ? <ErrorState description={error} onRetry={reload} /> : null}
 
       {data ? (
         <div className="space-y-5">
-          <SectionHeader title="Tracking Universe" description="股票清單來自 reference data，不依賴事件資料。" />
+          <SectionHeader title="Tracking Universe" description="點任一股票可進入詳情頁；沒有事件時，詳情頁會顯示 empty state。" />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {data.map((stock) => (
               <StockRow key={stock.stock_code} stock={stock} />

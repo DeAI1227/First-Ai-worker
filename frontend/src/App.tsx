@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
 import { IndustriesPage } from "./pages/IndustriesPage";
+import { IndustryDetailPage } from "./pages/IndustryDetailPage";
 import { StocksPage } from "./pages/StocksPage";
 import { StockDetailPage } from "./pages/StockDetailPage";
 import { MacroPage } from "./pages/MacroPage";
@@ -15,6 +16,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/industries" element={<IndustriesPage />} />
+        <Route path="/industries/:industryKey" element={<IndustryDetailPage />} />
         <Route path="/stocks" element={<StocksPage />} />
         <Route path="/stocks/:stockCode" element={<StockDetailPage />} />
         <Route path="/macro" element={<MacroPage />} />

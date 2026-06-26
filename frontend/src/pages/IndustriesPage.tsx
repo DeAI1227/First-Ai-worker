@@ -16,7 +16,7 @@ export function IndustriesPage() {
   return (
     <PageFrame
       title="產業追蹤"
-      subtitle="六大產業卡片以事件覆蓋與最新更新時間呈現，沒有事件時仍會保留產業卡片。"
+      subtitle="先看六大產業的整體狀態，再點進去看該產業的摘要、相關股票與事件內容。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -31,7 +31,7 @@ export function IndustriesPage() {
         <div className="space-y-5">
           <SectionHeader
             title="六大產業"
-            description="散熱、電力、自動駕駛、機器人、CPO 光通訊、網通。"
+            description="點卡片可以進入產業明細頁。這裡只顯示聚合後的卡片，不把原始事件整片攤開。"
           />
           <div className="grid gap-4 xl:grid-cols-2">
             {data.map((industry) => (

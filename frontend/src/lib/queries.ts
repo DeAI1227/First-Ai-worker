@@ -9,6 +9,17 @@ import type {
   StockDetailEvent,
   UnreadCount,
 } from "./types";
+import {
+  getReferenceIndustriesByStockCode,
+  normalizeIndustryName,
+  normalizeScopeName,
+  normalizeStockName,
+} from "./referenceData";
+import { sanitizeEvent, sanitizeReport } from "./presentation";
+
+function notNull<T>(value: T | null): value is T {
+  return value !== null;
+}
 
 export async function getDashboardEvents(): Promise<DashboardEvent[]> {
   const supabase = getSupabaseClient();
@@ -22,7 +33,13 @@ export async function getDashboardEvents(): Promise<DashboardEvent[]> {
     throw error;
   }
 
-  return (data ?? []) as DashboardEvent[];
+  return ((data ?? []) as DashboardEvent[])
+    .map((item) => ({
+      ...item,
+      scope_name: normalizeScopeName(item.scope_name, item.scope),
+    }))
+    .map((item) => sanitizeEvent(item))
+    .filter(notNull);
 }
 
 export async function getIndustryCards(): Promise<IndustryCard[]> {
@@ -36,7 +53,10 @@ export async function getIndustryCards(): Promise<IndustryCard[]> {
     throw error;
   }
 
-  return (data ?? []) as IndustryCard[];
+  return ((data ?? []) as IndustryCard[]).map((item) => ({
+    ...item,
+    industry_name: normalizeIndustryName(item.industry_name),
+  }));
 }
 
 export async function getStockCards(): Promise<StockCard[]> {
@@ -50,7 +70,14 @@ export async function getStockCards(): Promise<StockCard[]> {
     throw error;
   }
 
-  return (data ?? []) as StockCard[];
+  return ((data ?? []) as StockCard[]).map((item) => ({
+    ...item,
+    stock_name: normalizeStockName(item.stock_code, item.stock_name),
+    related_industries:
+      item.related_industries?.length
+        ? item.related_industries.map((industry) => normalizeIndustryName(industry))
+        : getReferenceIndustriesByStockCode(item.stock_code),
+  }));
 }
 
 export async function getStockDetailEvents(stockCode: string): Promise<StockDetailEvent[]> {
@@ -65,7 +92,13 @@ export async function getStockDetailEvents(stockCode: string): Promise<StockDeta
     throw error;
   }
 
-  return (data ?? []) as StockDetailEvent[];
+  return ((data ?? []) as StockDetailEvent[])
+    .map((item) => ({
+      ...item,
+      stock_name: normalizeStockName(item.stock_code, item.stock_name),
+    }))
+    .map((item) => sanitizeEvent(item))
+    .filter(notNull);
 }
 
 export async function getMacroEvents(): Promise<MacroEvent[]> {
@@ -79,7 +112,13 @@ export async function getMacroEvents(): Promise<MacroEvent[]> {
     throw error;
   }
 
-  return (data ?? []) as MacroEvent[];
+  return ((data ?? []) as MacroEvent[])
+    .map((item) => ({
+      ...item,
+      scope_name: normalizeScopeName(item.scope_name, item.scope),
+    }))
+    .map((item) => sanitizeEvent(item))
+    .filter(notNull);
 }
 
 export async function getInstitutionWatchEvents(): Promise<InstitutionWatchEvent[]> {
@@ -93,7 +132,13 @@ export async function getInstitutionWatchEvents(): Promise<InstitutionWatchEvent
     throw error;
   }
 
-  return (data ?? []) as InstitutionWatchEvent[];
+  return ((data ?? []) as InstitutionWatchEvent[])
+    .map((item) => ({
+      ...item,
+      scope_name: normalizeScopeName(item.scope_name, item.scope),
+    }))
+    .map((item) => sanitizeEvent(item))
+    .filter(notNull);
 }
 
 export async function getRecentReports(): Promise<RecentReport[]> {
@@ -108,7 +153,13 @@ export async function getRecentReports(): Promise<RecentReport[]> {
     throw error;
   }
 
-  return (data ?? []) as RecentReport[];
+  return ((data ?? []) as RecentReport[])
+    .map((item) => ({
+      ...item,
+      scope_name: normalizeScopeName(item.scope_name, item.scope),
+    }))
+    .map((item) => sanitizeReport(item))
+    .filter(notNull);
 }
 
 export async function getUnreadCounts(userId: string): Promise<UnreadCount> {

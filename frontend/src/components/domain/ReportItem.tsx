@@ -1,4 +1,4 @@
-import { BookOpenText, ArrowUpRight } from "lucide-react";
+import { BookOpenText } from "lucide-react";
 import type { RecentReport } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import { Card } from "../ui/Card";
@@ -25,7 +25,6 @@ export function ReportItem({ report }: Props) {
         </div>
         <div className="flex shrink-0 items-center gap-2 text-white/30">
           <BookOpenText className="h-4 w-4" />
-          <ArrowUpRight className="h-4 w-4" />
         </div>
       </div>
       <QualitySummaryMini summary={report.quality_summary} />

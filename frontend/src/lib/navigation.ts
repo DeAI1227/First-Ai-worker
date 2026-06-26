@@ -28,7 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const NAV_META = [
-  { label: "研究流", value: "Supabase only", icon: Database },
-  { label: "更新模式", value: "即時查詢", icon: Activity },
-  { label: "摘要核心", value: "AI 摘要 + 品質控管", icon: Brain },
+  { label: "資料流", value: "Supabase only", icon: Database },
+  { label: "更新狀態", value: "即時查詢", icon: Activity },
+  { label: "摘要模式", value: "AI 摘要 + 人工判讀", icon: Brain },
 ];

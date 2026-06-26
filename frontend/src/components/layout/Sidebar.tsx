@@ -66,7 +66,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </div>
         <div className="mt-2 text-sm font-medium text-white/90">Supabase production views</div>
         <p className="mt-2 text-xs leading-5 text-white/45">
-          這個前端只讀正式 views，不接 Python、不讀 output JSON，也不自己生成假事件。
+          這個前端只讀正式 views，不讀 Python、不讀 output JSON，也不自己生成假事件。
         </p>
       </div>
     </div>

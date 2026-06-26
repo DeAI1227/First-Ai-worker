@@ -17,7 +17,7 @@ export function ReportsPage() {
   return (
     <PageFrame
       title="研究報告"
-      subtitle="三日完整研究報告、重大事件偵測報告與各類 scope 報告都會在這裡出現。"
+      subtitle="這裡顯示經過整理後的研究報告，而不是原始抓取內容。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -25,17 +25,14 @@ export function ReportsPage() {
         </Button>
       }
     >
-      {loading ? <LoadingState label="正在載入研究報告…" /> : null}
+      {loading ? <LoadingState label="正在讀取研究報告" /> : null}
       {error ? <ErrorState description={error} onRetry={reload} /> : null}
 
       {data ? (
         <div className="space-y-4">
-          <SectionHeader title="近期報告" description="報告頁像知識庫，不是新聞列表。" />
+          <SectionHeader title="近期報告" description="只顯示可閱讀的報告內容，讓報告頁回到真正有資訊密度的狀態。" />
           {data.length === 0 ? (
-            <EmptyState
-              title="目前沒有研究報告"
-              description="暫時還沒有可閱讀的研究報告。"
-            />
+            <EmptyState title="目前沒有研究報告" description="如果今天還沒有產出 report_packet，這裡會維持空白。" />
           ) : (
             data.map((report) => <ReportItem key={report.report_id} report={report} />)
           )}

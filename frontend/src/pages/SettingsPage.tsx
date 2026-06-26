@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { RefreshCcw, Database, Settings2 } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { getUnreadCounts } from "@/lib/queries";
@@ -11,7 +11,6 @@ import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { UserIdEditor } from "@/components/domain/UserIdEditor";
 import { SystemSummaryCard } from "@/components/domain/SystemSummaryCard";
-import { useState } from "react";
 
 export function SettingsPage() {
   const [userId, setUserId] = useState(getStoredUserId());
@@ -21,7 +20,7 @@ export function SettingsPage() {
   return (
     <PageFrame
       title="系統設定"
-      subtitle="顯示資料來源狀態、read status、環境設定與系統說明。"
+      subtitle="顯示資料來源邊界、未讀狀態與目前前端的系統說明。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -29,7 +28,7 @@ export function SettingsPage() {
         </Button>
       }
     >
-      {loading ? <LoadingState label="正在載入系統資料…" /> : null}
+      {loading ? <LoadingState label="正在載入系統資訊…" /> : null}
       {error ? <ErrorState description={error} onRetry={reload} /> : null}
 
       <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
@@ -47,7 +46,7 @@ export function SettingsPage() {
               <p>• 前端不讀 Python 程式。</p>
               <p>• 前端不讀 output JSON。</p>
               <p>• 前端不直接呼叫 Collector。</p>
-              <p>• read / unread 只寫入 user_read_status。</p>
+              <p>• 已讀 / 未讀只寫入 user_read_status。</p>
             </div>
           </Card>
         </div>
@@ -63,13 +62,13 @@ export function SettingsPage() {
           ) : null}
 
           <Card className="space-y-4">
-            <SectionHeader title="Supabase 連線狀態" description="使用 VITE_SUPABASE_URL 與 VITE_SUPABASE_ANON_KEY。" />
+            <SectionHeader title="Supabase 連線狀態" description="前端使用 `VITE_SUPABASE_URL` 與 `VITE_SUPABASE_ANON_KEY`。" />
             <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-black/20 p-4 text-sm leading-6 text-white/55">
               <Database className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
               <div>
-                <div className="font-medium text-white">正式資料中心</div>
+                <div className="font-medium text-white">正式資料來源</div>
                 <p className="mt-1">
-                  新前端只讀 Supabase production views；如果沒有設定環境變數，頁面會回報清楚的連線錯誤。
+                  前端只讀 Supabase production views。如果環境變數沒有設好，頁面會直接顯示連線錯誤。
                 </p>
               </div>
             </div>
@@ -77,9 +76,7 @@ export function SettingsPage() {
               <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-white/55" />
               <div>
                 <div className="font-medium text-white">前端定位</div>
-                <p className="mt-1">
-                  這不是行情工具，也不是 Python 的視覺外殼，而是新的 Supabase-only 研究終端。
-                </p>
+                <p className="mt-1">這是一個研究終端，不是 Python 管理後台，也不是報價面板。</p>
               </div>
             </div>
           </Card>

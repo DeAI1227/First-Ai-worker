@@ -1,9 +1,9 @@
 import { ArrowUpRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { StockCard } from "@/lib/types";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { formatDate } from "@/lib/format";
-import { Link } from "react-router-dom";
 
 type Props = {
   stock: StockCard;
@@ -32,7 +32,7 @@ export function StockRow({ stock }: Props) {
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
-            <div className="text-[11px] text-white/42">事件數</div>
+            <div className="text-[11px] text-white/42">資料庫事件數</div>
             <div className="mt-1 text-lg font-semibold text-white">{stock.recent_event_count}</div>
           </div>
           <div className="rounded-2xl border border-white/8 bg-black/20 p-3">

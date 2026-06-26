@@ -14,7 +14,7 @@ export function UserIdEditor({ userId, onChange }: Props) {
     <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
       <div className="text-lg font-semibold text-white">使用者識別</div>
       <p className="mt-1 text-sm leading-6 text-white/48">
-        未讀數來自 `view_unread_counts` 與 `user_read_status`。你可以先在本機輸入一組使用者 ID 做測試。
+        未讀資訊來自 `view_unread_counts` 與 `user_read_status`。你可以在這裡輸入一組使用者 ID 做測試。
       </p>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
