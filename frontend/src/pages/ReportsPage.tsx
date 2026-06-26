@@ -17,7 +17,7 @@ export function ReportsPage() {
   return (
     <PageFrame
       title="研究報告"
-      subtitle="這裡顯示經過整理後的研究報告，而不是原始抓取內容。"
+      subtitle="顯示由 report_packet 推進 Supabase production views 的研究報告。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -30,9 +30,9 @@ export function ReportsPage() {
 
       {data ? (
         <div className="space-y-4">
-          <SectionHeader title="近期報告" description="只顯示可閱讀的報告內容，讓報告頁回到真正有資訊密度的狀態。" />
+          <SectionHeader title="近期報告" description="報告是多日或多來源整理後的研究輸出，不是逐篇新聞轉貼。" />
           {data.length === 0 ? (
-            <EmptyState title="目前沒有研究報告" description="如果今天還沒有產出 report_packet，這裡會維持空白。" />
+            <EmptyState title="目前沒有研究報告" description="如果尚未產出 report_packet，這裡會維持空狀態。" />
           ) : (
             data.map((report) => <ReportItem key={report.report_id} report={report} />)
           )}

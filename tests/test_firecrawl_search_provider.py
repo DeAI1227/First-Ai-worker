@@ -7,7 +7,6 @@ from unittest.mock import patch
 import requests
 
 from collector.sources.search.firecrawl_provider import FirecrawlProvider
-from collector.sources.search.mock_search_provider import MockSearchProvider
 from collector.sources.search.registry import select_search_provider
 from collector.sources.search_fetcher import fetch_search_sources
 from collector.tasks import make_task
@@ -27,8 +26,8 @@ class FirecrawlSearchProviderTests(unittest.TestCase):
             self.assertFalse(provider.is_available())
             provider_name, provider_impl = select_search_provider("auto", {})
 
-        self.assertEqual(provider_name, "mock")
-        self.assertIsInstance(provider_impl, MockSearchProvider)
+        self.assertEqual(provider_name, "unavailable")
+        self.assertIsNone(provider_impl)
 
     def test_firecrawl_provider_parses_search_response_using_hosted_default_url(self):
         task = {
@@ -123,31 +122,18 @@ class FirecrawlSearchProviderTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["source_url"], "https://tw.stock.yahoo.com/news/allowed")
 
-    def test_fetch_search_sources_falls_back_to_mock_when_firecrawl_fails(self):
+    def test_fetch_search_sources_returns_empty_when_firecrawl_fails(self):
         task = make_task(scope="industry", scope_name="thermal", source_mode="search")
 
         with patch.dict(os.environ, {"FIRECRAWL_API_KEY": "fc-test-key"}, clear=True), patch(
             "collector.sources.search.firecrawl_provider.requests.post",
             side_effect=requests.RequestException("boom"),
-        ), patch.object(
-            MockSearchProvider,
-            "search",
-            return_value=[
-                {
-                    "title": "Mock thermal update",
-                    "source_name": "Mock Search",
-                    "source_url": "https://mock.example.com",
-                    "published_at": "",
-                    "content": "Cooling demand remains strong.",
-                    "source_type": "search",
-                }
-            ],
-        ) as mocked_mock:
-            results = fetch_search_sources(task, ["thermal"], state={"search_provider": "firecrawl"})
+        ):
+            state = {"search_provider": "firecrawl"}
+            results = fetch_search_sources(task, ["thermal"], state=state)
 
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["source_url"], "https://mock.example.com")
-        mocked_mock.assert_called_once()
+        self.assertEqual(results, [])
+        self.assertTrue(any("search provider firecrawl failed" in error for error in state["run_errors"]))
 
 
 if __name__ == "__main__":

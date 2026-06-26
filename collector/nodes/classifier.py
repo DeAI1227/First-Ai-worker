@@ -10,43 +10,58 @@ def classify_event(state: dict) -> dict:
 
     if scope == "macro":
         state["event_type"] = "macro"
-        state["importance"] = "general"
-        state["possible_impact"] = "宏觀政策與經濟數據可能影響市場風險偏好與資金配置。"
-        state["risk_note"] = "宏觀事件通常具有時效性與解讀差異，仍需持續觀察後續數據與政策表態。"
+        state["importance"] = _importance_from_sources(state)
+        state.setdefault("possible_impact", "大環境事件可能影響市場風險偏好、資金流向與產業評價。")
+        state.setdefault("risk_note", "總體事件解讀具有時效性，仍需搭配後續數據與政策訊號。")
         state["related_industries"] = []
         state["related_stocks"] = []
         state["related_macro_topics"] = [item["key"] for item in TRACKING_MACRO_TOPICS if item.get("enabled", True)]
         state["related_institution_watch"] = []
-        state["tags"] = ["宏觀", "CPI", "利率"]
-    elif scope == "industry" and scope_name == "散熱":
+        state.setdefault("tags", ["大環境", "總體經濟", "資金流向"])
+    elif scope == "industry":
         state["event_type"] = "industry"
-        state["importance"] = "important"
-        state["possible_impact"] = "散熱產業動態可能影響 AI 伺服器與資料中心供應鏈評價與需求預期。"
-        state["risk_note"] = "產業消息常受單一事件驅動，仍需交叉比對供應鏈與需求面訊號。"
-        state["related_industries"] = ["散熱"]
+        state["importance"] = _importance_from_sources(state)
+        state.setdefault("possible_impact", f"{scope_name} 事件可能影響產業供需、供應鏈角色或客戶需求節奏。")
+        state.setdefault("risk_note", "產業事件需交叉比對多個來源，避免用單一消息過度延伸。")
+        state["related_industries"] = [scope_name] if scope_name else []
         state["related_stocks"] = [stock_code] if stock_code else []
         state["related_macro_topics"] = []
         state["related_institution_watch"] = []
-        state["tags"] = ["AI伺服器", "液冷", "散熱"]
+        state.setdefault("tags", [scope_name, "產業事件", "供應鏈"])
     elif scope in {"institution", "institution_watch"}:
         state["event_type"] = "institution"
-        state["importance"] = "general"
-        state["possible_impact"] = "大行關注事件可能反映法人調整持股與資金流向的變化。"
-        state["risk_note"] = "法人動向不等於價格趨勢，仍需搭配事件脈絡與基本面觀察。"
+        state["importance"] = _importance_from_sources(state)
+        state.setdefault("possible_impact", "大行關注事件可能反映法人研究焦點、資金敘事或權值股關注方向。")
+        state.setdefault("risk_note", "法人關注不等於價格方向，仍需回到事件脈絡與基本面資料。")
         state["related_industries"] = []
         state["related_stocks"] = [stock_code] if stock_code else []
         state["related_macro_topics"] = []
         state["related_institution_watch"] = [stock_code] if stock_code else []
-        state["tags"] = ["大行關注", "法人", "資金流向"]
+        state.setdefault("tags", ["大行關注", "法人焦點", "研究事件"])
     else:
-        state["event_type"] = "industry" if scope == "industry" else "stock" if scope == "stock" else "general"
-        state["importance"] = "general"
-        state["possible_impact"] = "相關事件可能影響研究判讀，但仍需結合產業與公司脈絡理解。"
-        state["risk_note"] = "單一事件不宜過度延伸，仍需等待更多資訊驗證。"
-        state["related_industries"] = [scope_name] if scope == "industry" and scope_name else []
+        state["event_type"] = "stock" if scope == "stock" else "general"
+        state["importance"] = _importance_from_sources(state)
+        state.setdefault("possible_impact", "相關事件可能影響公司或產業研究判讀，仍需搭配後續資訊驗證。")
+        state.setdefault("risk_note", "單一事件不宜過度延伸，需持續追蹤公開資訊與後續更新。")
+        state["related_industries"] = list(state.get("industries", []))
         state["related_stocks"] = [stock_code] if stock_code else []
         state["related_macro_topics"] = []
         state["related_institution_watch"] = []
-        state["tags"] = []
+        state.setdefault("tags", [])
 
     return state
+
+
+def _importance_from_sources(state: dict) -> str:
+    sources = state.get("filtered_sources", [])
+    text = " ".join(
+        f"{source.get('title', '')} {source.get('content', '')}"
+        for source in sources
+    )
+    critical_terms = ["重大訊息", "法說", "併購", "停工", "裁罰", "財測", "營收"]
+    important_terms = ["公告", "訂單", "供應鏈", "AI", "資料中心", "液冷", "CPI", "FED", "外資"]
+    if any(term in text for term in critical_terms):
+        return "critical"
+    if any(term in text for term in important_terms):
+        return "important"
+    return "general"

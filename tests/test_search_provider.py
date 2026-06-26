@@ -27,12 +27,12 @@ class SearchProviderTests(unittest.TestCase):
         self.assertTrue(all(item["source_type"] == "search" for item in raw_sources))
         self.assertTrue(all(item["title"] and item["source_url"] and item["content"] for item in raw_sources))
 
-    def test_auto_provider_without_key_falls_back_to_mock(self):
+    def test_auto_provider_without_key_is_unavailable(self):
         with patch.dict(os.environ, {}, clear=True):
             provider_name, provider = select_search_provider("auto", {})
 
-        self.assertEqual(provider_name, "mock")
-        self.assertIsInstance(provider, MockSearchProvider)
+        self.assertEqual(provider_name, "unavailable")
+        self.assertIsNone(provider)
 
     def test_search_provider_env_variable_is_respected(self):
         with patch.dict(os.environ, {"SEARCH_PROVIDER": "mock"}, clear=True):
@@ -41,19 +41,19 @@ class SearchProviderTests(unittest.TestCase):
         self.assertEqual(provider_name, "mock")
         self.assertIsInstance(provider, MockSearchProvider)
 
-    def test_tavily_provider_without_key_falls_back_to_mock(self):
+    def test_tavily_provider_without_key_is_unavailable(self):
         with patch.dict(os.environ, {}, clear=True):
             provider_name, provider = select_search_provider("tavily", {})
 
-        self.assertEqual(provider_name, "mock")
-        self.assertIsInstance(provider, MockSearchProvider)
+        self.assertEqual(provider_name, "unavailable")
+        self.assertIsNone(provider)
 
-    def test_serpapi_provider_without_key_falls_back_to_mock(self):
+    def test_serpapi_provider_without_key_is_unavailable(self):
         with patch.dict(os.environ, {}, clear=True):
             provider_name, provider = select_search_provider("serpapi", {})
 
-        self.assertEqual(provider_name, "mock")
-        self.assertIsInstance(provider, MockSearchProvider)
+        self.assertEqual(provider_name, "unavailable")
+        self.assertIsNone(provider)
 
     def test_search_fetcher_accepts_search_keywords(self):
         task = make_task(scope="industry", scope_name="散熱", stock_code="6230", stock_name="尼得科超眾", source_mode="search")

@@ -16,7 +16,7 @@ export function IndustriesPage() {
   return (
     <PageFrame
       title="產業追蹤"
-      subtitle="先看六大產業的整體狀態，再點進去看該產業的摘要、相關股票與事件內容。"
+      subtitle="六大產業由 reference data 固定呈現。即使今天沒有事件，產業卡片仍會存在。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -24,14 +24,14 @@ export function IndustriesPage() {
         </Button>
       }
     >
-      {loading ? <LoadingState label="正在載入六大產業卡片…" /> : null}
+      {loading ? <LoadingState label="正在讀取產業卡片" /> : null}
       {error ? <ErrorState description={error} onRetry={reload} /> : null}
 
       {data ? (
         <div className="space-y-5">
           <SectionHeader
             title="六大產業"
-            description="點卡片可以進入產業明細頁。這裡只顯示聚合後的卡片，不把原始事件整片攤開。"
+            description="點擊任一產業可進入詳情頁，查看整理後摘要、相關股票與近期事件。"
           />
           <div className="grid gap-4 xl:grid-cols-2">
             {data.map((industry) => (

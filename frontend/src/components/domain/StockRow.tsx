@@ -20,11 +20,15 @@ export function StockRow({ stock }: Props) {
               <div className="mt-1 text-sm text-white/60">{stock.stock_name}</div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {stock.related_industries.map((industry) => (
-                <Badge key={industry} tone="neutral">
-                  {industry}
-                </Badge>
-              ))}
+              {stock.related_industries.length ? (
+                stock.related_industries.map((industry) => (
+                  <Badge key={industry} tone="neutral">
+                    {industry}
+                  </Badge>
+                ))
+              ) : (
+                <Badge tone="neutral">大行關注</Badge>
+              )}
             </div>
           </div>
           <ArrowUpRight className="h-4 w-4 text-white/30 transition group-hover:text-white/70" />
@@ -32,7 +36,7 @@ export function StockRow({ stock }: Props) {
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
-            <div className="text-[11px] text-white/42">資料庫事件數</div>
+            <div className="text-[11px] text-white/42">研究事件數</div>
             <div className="mt-1 text-lg font-semibold text-white">{stock.recent_event_count}</div>
           </div>
           <div className="rounded-2xl border border-white/8 bg-black/20 p-3">

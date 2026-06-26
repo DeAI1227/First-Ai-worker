@@ -4,7 +4,6 @@ from collections.abc import Callable
 import os
 from typing import Any
 
-from collector.sources.search.base_provider import SearchProviderError, SearchProviderUnavailableError
 from collector.sources.search.firecrawl_provider import FirecrawlProvider
 from collector.sources.search.mock_search_provider import MockSearchProvider
 from collector.sources.search.serpapi_provider import SerpApiProvider
@@ -31,18 +30,21 @@ def resolve_search_provider_name(requested: str | None, state: dict[str, Any] | 
     return "auto"
 
 
-def select_search_provider(requested: str | None, state: dict[str, Any] | None = None) -> tuple[str, Any]:
+def select_search_provider(requested: str | None, state: dict[str, Any] | None = None) -> tuple[str, Any | None]:
     provider_name = resolve_search_provider_name(requested, state)
     if provider_name == "auto":
         firecrawl = FirecrawlProvider()
         if firecrawl.is_available():
             return "firecrawl", firecrawl
-        return "mock", MockSearchProvider()
+        return "unavailable", None
 
-    provider_class = SEARCH_PROVIDER_REGISTRY.get(provider_name, MockSearchProvider)
+    provider_class = SEARCH_PROVIDER_REGISTRY.get(provider_name)
+    if provider_class is None:
+        return "unavailable", None
+
     provider = provider_class()
     if provider_name != "mock" and not provider.is_available():
-        return "mock", MockSearchProvider()
+        return "unavailable", None
     return provider_name, provider
 
 

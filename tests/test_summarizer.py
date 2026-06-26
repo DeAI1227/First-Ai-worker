@@ -248,7 +248,7 @@ class SummarizerTests(unittest.TestCase):
             scope_name="thermal",
             stock_code="6230",
             stock_name="Nidec Chaun-Choung",
-            source_mode="hybrid",
+            source_mode="mock",
             summarizer_mode="llm",
             llm_provider="auto",
         )

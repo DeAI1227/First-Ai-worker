@@ -22,8 +22,8 @@ export function DashboardPage() {
 
   return (
     <PageFrame
-      title="總覽"
-      subtitle="這是 AI 投資研究終端，不是報價 App。這裡只顯示整理過的研究事件、報告與資料品質摘要。"
+      title="AI 投資研究終端"
+      subtitle="這不是報價 App。這裡只顯示整理過的研究事件、研究報告與資料品質摘要。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -38,65 +38,42 @@ export function DashboardPage() {
         <div className="grid gap-5 xl:grid-cols-[1.8fr_0.9fr]">
           <div className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatPill
-                label="重大事件"
-                value={data.dashboardEvents.filter((item) => item.importance === "critical").length}
-                tone="critical"
-              />
-              <StatPill
-                label="重要事件"
-                value={data.dashboardEvents.filter((item) => item.importance === "important").length}
-                tone="important"
-              />
-              <StatPill
-                label="一般事件"
-                value={data.dashboardEvents.filter((item) => item.importance === "general").length}
-                tone="general"
-              />
+              <StatPill label="重大事件" value={data.dashboardEvents.filter((item) => item.importance === "critical").length} tone="critical" />
+              <StatPill label="重要事件" value={data.dashboardEvents.filter((item) => item.importance === "important").length} tone="important" />
+              <StatPill label="一般事件" value={data.dashboardEvents.filter((item) => item.importance === "general").length} tone="general" />
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
               <QualitySummaryMini summary={data.dashboardEvents[0]?.quality_summary} />
-
               <Card className="space-y-4">
                 <SectionHeader
-                  title="未讀統計"
-                  description="未讀狀態來自 user_read_status。"
+                  title="未讀狀態"
+                  description="已讀狀態來自 user_read_status，不寫回事件本體。"
                   action={
                     <div className="rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-white/60">
                       {data.unreadCounts.unread_total_count} 筆未讀
                     </div>
                   }
                 />
-
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
-                    <div className="text-[11px] text-white/42">事件</div>
-                    <div className="mt-1 text-xl font-semibold text-white">{data.unreadCounts.unread_event_count}</div>
-                  </div>
-                  <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
-                    <div className="text-[11px] text-white/42">報告</div>
-                    <div className="mt-1 text-xl font-semibold text-white">{data.unreadCounts.unread_report_count}</div>
-                  </div>
-                  <div className="rounded-2xl border border-accent/15 bg-accent/10 p-3">
-                    <div className="text-[11px] text-white/42">使用者 ID</div>
-                    <div className="mt-1 text-sm font-medium break-all text-white/90">{data.unreadCounts.user_id}</div>
-                  </div>
+                  <Metric label="事件" value={data.unreadCounts.unread_event_count} />
+                  <Metric label="報告" value={data.unreadCounts.unread_report_count} />
+                  <Metric label="總計" value={data.unreadCounts.unread_total_count} accent />
                 </div>
               </Card>
             </div>
 
             <Card className="space-y-4">
-              <SectionHeader title="今日研究摘要" description="先看一段人能讀的摘要，而不是先丟一堆碎片事件給你。" />
+              <SectionHeader title="今日研究摘要" description="先看聚合後的研究摘要，而不是先讀一堆碎片新聞。" />
               <p className="text-sm leading-7 text-white/70">{buildPageDigest("總覽", data.dashboardEvents)}</p>
             </Card>
 
             <Card className="space-y-4">
-              <SectionHeader title="最新事件" description="只保留近期重點事件卡片，避免畫面被重複訊息淹沒。" />
+              <SectionHeader title="最新研究事件" description="只顯示已通過資料品質篩選的事件。" />
               <div className="space-y-4">
                 {data.dashboardEvents.length === 0 ? (
                   <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-6 text-center text-sm text-white/46">
-                    目前沒有可顯示的事件。請稍後重新整理，或先檢查後端資料是否已寫入 Supabase。
+                    目前沒有可顯示的研究事件。請確認後端 pipeline 是否已寫入 Supabase production views。
                   </div>
                 ) : (
                   data.dashboardEvents.slice(0, 6).map((event) => <EventItem key={event.event_id} event={event} showQuality />)
@@ -114,11 +91,11 @@ export function DashboardPage() {
             />
 
             <Card className="space-y-4">
-              <SectionHeader title="近期報告" description="顯示最近產出的研究報告摘要。" />
+              <SectionHeader title="近期研究報告" description="報告來自 report_packet 與 Supabase production views。" />
               <div className="space-y-3">
                 {data.reports.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/46">
-                    目前還沒有研究報告。
+                    目前沒有研究報告。
                   </div>
                 ) : (
                   data.reports.slice(0, 3).map((report) => (
@@ -133,17 +110,26 @@ export function DashboardPage() {
             </Card>
 
             <Card className="space-y-4">
-              <SectionHeader title="系統邊界" description="這個終端的資料來源與限制。" />
+              <SectionHeader title="系統邊界" description="前端只讀 Supabase production views。" />
               <div className="space-y-3 text-sm leading-6 text-white/55">
-                <p>前端只讀 Supabase views。</p>
-                <p>前端不讀 Python 程式。</p>
-                <p>前端不讀 output JSON。</p>
-                <p>沒有事件時使用空狀態，不產生假事件。</p>
+                <p>不讀 Python 程式。</p>
+                <p>不讀 output JSON。</p>
+                <p>不直接呼叫 Collector。</p>
+                <p>沒有新聞時顯示 empty state，不產生假事件。</p>
               </div>
             </Card>
           </div>
         </div>
       ) : null}
     </PageFrame>
+  );
+}
+
+function Metric({ label, value, accent = false }: { label: string; value: number; accent?: boolean }) {
+  return (
+    <div className={`rounded-2xl border p-3 ${accent ? "border-accent/15 bg-accent/10" : "border-white/8 bg-black/20"}`}>
+      <div className="text-[11px] text-white/42">{label}</div>
+      <div className="mt-1 text-xl font-semibold text-white">{value}</div>
+    </div>
   );
 }

@@ -71,13 +71,7 @@ def build_topic_tags(state: dict, sources: list[dict[str, Any]]) -> list[str]:
     )
 
     if len(tags) < 3:
-        tags.extend(
-            [
-                clean_text(state.get("scope", "")),
-                "研究情報",
-                "資料摘要",
-            ]
-        )
+        tags.extend(fallback_tags_for_scope(state))
 
     return dedupe_preserve_order(tags)[:8]
 
@@ -99,11 +93,11 @@ def source_overview(sources: list[dict[str, Any]], max_items: int = 3) -> str:
 def fallback_tags_for_scope(state: dict) -> list[str]:
     scope = clean_text(state.get("scope", ""))
     if scope == "macro":
-        return ["宏觀", "研究資訊", "資料摘要"]
+        return ["大環境", "總體經濟", "研究摘要"]
     if scope == "industry":
-        return ["產業", "研究資訊", "資料摘要"]
+        return ["產業", "供應鏈", "研究摘要"]
     if scope == "stock":
-        return ["個股", "研究資訊", "資料摘要"]
+        return ["個股", "公司事件", "研究摘要"]
     if scope in {"institution", "institution_watch"}:
-        return ["大行關注", "研究資訊", "資料摘要"]
-    return ["研究資訊", "分析", "資料摘要"]
+        return ["大行關注", "法人焦點", "研究摘要"]
+    return ["研究摘要", "公開資訊", "事件脈絡"]

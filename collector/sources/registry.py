@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collector.sources.base import clean_text
-from collector.sources.config import get_http_source_configs, get_rss_source_configs
+from collector.sources.config import get_http_source_configs
 from collector.sources.http_fetcher import fetch_http_sources
 from collector.sources.mock_fetcher import fetch_mock_sources
 from collector.sources.rss_fetcher import fetch_rss_sources
@@ -9,7 +9,7 @@ from collector.sources.search_fetcher import fetch_search_sources
 
 
 def fetch_raw_sources(state: dict) -> list[dict]:
-    source_mode = state.get("source_mode", "mock")
+    source_mode = str(state.get("source_mode", "mock") or "mock").strip().lower()
     task = {
         "scope": state.get("scope", ""),
         "scope_name": state.get("scope_name", ""),
@@ -22,54 +22,71 @@ def fetch_raw_sources(state: dict) -> list[dict]:
         return fetch_mock_sources(task)
 
     if source_mode == "rss":
-        rss_sources = fetch_rss_sources(task, state)
-        if rss_sources:
-            return rss_sources
-        return fetch_mock_sources(task)
+        return _fetch_rss_only(task, state)
 
     if source_mode == "http":
-        http_urls = _resolve_http_urls(state)
-        if not http_urls:
-            http_urls = _resolve_http_urls_from_source_rules(state)
-        http_sources = fetch_http_sources(task, urls=http_urls, state=state)
-        if http_sources:
-            return http_sources
-        return fetch_mock_sources(task)
+        return _fetch_http_only(task, state)
 
     if source_mode == "search":
-        search_sources = fetch_search_sources(
-            task,
-            state.get("search_keywords", []),
-            state=state,
-            provider=state.get("search_provider"),
-        )
-        if search_sources:
-            return search_sources
-        return fetch_mock_sources(task)
+        return _fetch_search_only(task, state)
 
     if source_mode == "hybrid":
-        rss_sources = fetch_rss_sources(task, state)
-        if rss_sources:
-            return rss_sources
+        return _fetch_hybrid(task, state)
 
-        http_urls = _resolve_http_urls(state)
-        http_sources = fetch_http_sources(task, urls=http_urls, state=state)
-        if http_sources:
-            return http_sources
+    state.setdefault("run_errors", []).append(f"unknown source_mode: {source_mode}; no sources fetched")
+    return []
 
-        search_sources = fetch_search_sources(
-            task,
-            state.get("search_keywords", []),
-            state=state,
-            provider=state.get("search_provider"),
-        )
-        if search_sources:
-            return search_sources
 
-        return fetch_mock_sources(task)
+def _fetch_rss_only(task: dict, state: dict) -> list[dict]:
+    sources = fetch_rss_sources(task, state)
+    if not sources:
+        state.setdefault("run_errors", []).append("rss source mode returned no usable sources")
+    return sources
 
-    state.setdefault("run_errors", []).append(f"unknown source_mode: {source_mode}; fallback to mock sources")
-    return fetch_mock_sources(task)
+
+def _fetch_http_only(task: dict, state: dict) -> list[dict]:
+    http_urls = _resolve_http_urls(state) or _resolve_http_urls_from_source_rules(state)
+    sources = fetch_http_sources(task, urls=http_urls, state=state)
+    if not sources:
+        state.setdefault("run_errors", []).append("http source mode returned no usable sources")
+    return sources
+
+
+def _fetch_search_only(task: dict, state: dict) -> list[dict]:
+    sources = fetch_search_sources(
+        task,
+        state.get("search_keywords", []),
+        state=state,
+        provider=state.get("search_provider"),
+    )
+    if not sources:
+        state.setdefault("run_errors", []).append("search source mode returned no usable sources")
+    return sources
+
+
+def _fetch_hybrid(task: dict, state: dict) -> list[dict]:
+    sources = fetch_rss_sources(task, state)
+    if sources:
+        return sources
+
+    http_urls = _resolve_http_urls(state) or _resolve_http_urls_from_source_rules(state)
+    sources = fetch_http_sources(task, urls=http_urls, state=state)
+    if sources:
+        return sources
+
+    sources = fetch_search_sources(
+        task,
+        state.get("search_keywords", []),
+        state=state,
+        provider=state.get("search_provider"),
+    )
+    if sources:
+        return sources
+
+    state.setdefault("run_errors", []).append(
+        "hybrid source mode returned no usable real sources; mock fallback is disabled unless source_mode=mock"
+    )
+    return []
 
 
 def _resolve_http_urls(state: dict) -> list[str]:

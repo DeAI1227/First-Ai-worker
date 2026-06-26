@@ -73,8 +73,8 @@ class RSSFetcherTests(unittest.TestCase):
         with patch.object(rss_module, "_download_rss_feed", side_effect=RuntimeError("network down")):
             state = run_collector_task(task)
 
-        self.assertEqual(state["event_packet"]["packet_type"], "event")
-        self.assertGreater(len(state.get("raw_sources", [])), 0)
+        self.assertEqual(state["event_packet"], {})
+        self.assertEqual(state.get("raw_sources", []), [])
         self.assertTrue(any("rss fetch" in error for error in state.get("run_errors", [])))
 
     def test_source_registry_can_select_mock(self):
@@ -100,6 +100,10 @@ class RSSFetcherTests(unittest.TestCase):
     def test_hybrid_falls_back_to_mock_when_rss_empty(self):
         task = make_task(scope="industry", scope_name="散熱", stock_code="6230", stock_name="尼得科超眾", source_mode="hybrid")
         with patch.object(rss_module, "_download_rss_feed", side_effect=RuntimeError("network down")), patch.object(
+            source_registry,
+            "fetch_http_sources",
+            return_value=[],
+        ), patch.object(
             source_registry,
             "fetch_search_sources",
             return_value=[

@@ -135,7 +135,7 @@ class HttpFetcherTests(unittest.TestCase):
         mocked_http.assert_called_once()
         self.assertEqual(mocked_http.call_args.kwargs["urls"], ["https://tw.stock.yahoo.com/quote/2330.TW/news"])
 
-    def test_http_mode_falls_back_to_mock_when_no_urls(self):
+    def test_http_mode_returns_empty_when_no_urls(self):
         state = {
             "source_mode": "http",
             "scope": "industry",
@@ -144,8 +144,9 @@ class HttpFetcherTests(unittest.TestCase):
         with patch.object(source_registry, "fetch_mock_sources", return_value=[{"source_type": "mock"}]) as mocked_mock:
             raw_sources = fetch_raw_sources(state)
 
-        self.assertEqual(raw_sources[0]["source_type"], "mock")
-        mocked_mock.assert_called_once()
+        self.assertEqual(raw_sources, [])
+        mocked_mock.assert_not_called()
+        self.assertTrue(any("http source mode returned no usable sources" in error for error in state["run_errors"]))
 
     def test_hybrid_tries_http_after_rss_empty(self):
         state = {
@@ -162,7 +163,7 @@ class HttpFetcherTests(unittest.TestCase):
         self.assertEqual(raw_sources, [{"source_type": "http"}])
         mocked_http.assert_called_once()
 
-    def test_hybrid_falls_back_to_mock_when_rss_and_http_empty(self):
+    def test_hybrid_returns_empty_when_rss_http_and_search_empty(self):
         state = {
             "source_mode": "hybrid",
             "scope": "industry",
@@ -176,8 +177,9 @@ class HttpFetcherTests(unittest.TestCase):
         ) as mocked_mock:
             raw_sources = fetch_raw_sources(state)
 
-        self.assertEqual(raw_sources, [{"source_type": "mock"}])
-        mocked_mock.assert_called_once()
+        self.assertEqual(raw_sources, [])
+        mocked_mock.assert_not_called()
+        self.assertTrue(any("mock fallback is disabled" in error for error in state["run_errors"]))
 
     def test_http_mode_can_produce_event_packet(self):
         task = make_task(scope="industry", scope_name="散熱", stock_code="6230", stock_name="尼得科超眾", source_mode="http")

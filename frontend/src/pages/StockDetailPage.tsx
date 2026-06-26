@@ -33,8 +33,8 @@ export function StockDetailPage() {
 
   return (
     <PageFrame
-      title={stock ? `${stock.stock_code} ${stock.stock_name}` : `股票詳情 ${stockCode}`}
-      subtitle="股票是 reference data，事件才是研究內容。沒有事件時，這頁會顯示空狀態，不會硬塞假新聞。"
+      title={stock ? `${stock.stock_code} ${stock.stock_name}` : `股票 ${stockCode}`}
+      subtitle="這裡顯示該股票的研究事件流。沒有事件時，只顯示 empty state。"
       actions={
         <Button
           tone="secondary"
@@ -48,44 +48,39 @@ export function StockDetailPage() {
         </Button>
       }
     >
-      {stockState.loading || eventState.loading ? <LoadingState label="正在整理股票事件" /> : null}
+      {stockState.loading || eventState.loading ? <LoadingState label="正在讀取股票研究事件" /> : null}
       {stockState.error ? <ErrorState description={stockState.error} onRetry={stockState.reload} /> : null}
       {eventState.error ? <ErrorState description={eventState.error} onRetry={eventState.reload} /> : null}
 
       {stock ? (
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <Card className="space-y-4">
-            <SectionHeader title="股票基本資訊" description="這些資訊來自 stocks 與 stock_industries，不依賴事件是否存在。" />
+            <SectionHeader title="股票基本資料" description="股票來自 Supabase reference data，不依賴事件是否存在。" />
             <div className="flex flex-wrap gap-2">
-              {stock.related_industries.map((industry) => (
-                <Badge key={industry} tone="neutral">
-                  {industry}
-                </Badge>
-              ))}
+              {stock.related_industries.length ? (
+                stock.related_industries.map((industry) => (
+                  <Badge key={industry} tone="neutral">
+                    {industry}
+                  </Badge>
+                ))
+              ) : (
+                <Badge tone="neutral">大行關注</Badge>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-                <div className="text-[11px] text-white/42">資料庫事件數</div>
-                <div className="mt-1 text-xl font-semibold text-white">{stock.recent_event_count}</div>
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-                <div className="text-[11px] text-white/42">最近更新</div>
-                <div className="mt-1 text-xl font-semibold text-white">{stock.latest_event_date ?? "—"}</div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/8 bg-accent/10 p-4 text-sm leading-6 text-white/70">
-              就算這支股票今天沒有事件，它仍然應該出現在股票清單中；只有事件流會是空的。
+              <Metric label="研究事件數" value={stock.recent_event_count} />
+              <Metric label="最近更新" value={stock.latest_event_date ?? "無事件"} />
             </div>
           </Card>
 
           <Card className="space-y-4">
-            <SectionHeader title="使用提醒" description="這裡顯示的是研究事件，不是股價系統，也不是投資建議工具。" />
+            <SectionHeader title="閱讀提醒" description="AI 只整理事件脈絡，不做價格方向判斷。" />
             <div className="flex items-start gap-3 rounded-2xl border border-amber-400/15 bg-amber-400/10 p-4 text-sm leading-6 text-amber-50">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <div className="font-medium">請把這裡當成研究終端</div>
+                <div className="font-medium">請回到來源交叉確認</div>
                 <p className="mt-1 text-amber-50/80">
-                  這些內容用來看事件脈絡、供應鏈關聯與後續追蹤方向，不直接提供買賣建議。
+                  一檔股票有多則新聞時，系統會先統整成研究摘要，再保留來源供你回查。
                 </p>
               </div>
             </div>
@@ -93,33 +88,40 @@ export function StockDetailPage() {
         </div>
       ) : null}
 
-      {events.length > 0 ? (
-        <Card className="mt-5 space-y-4">
-          <SectionHeader title="股票摘要" description="先看一段摘要，再決定要不要往下讀完整事件卡。" />
-          <p className="text-sm leading-7 text-white/70">
-            {buildPageDigest(stock ? `${stock.stock_code} ${stock.stock_name}` : stockCode, events)}
-          </p>
-        </Card>
-      ) : null}
+      <Card className="mt-5 space-y-4">
+        <SectionHeader title="本頁研究摘要" description="這裡把該股票近期事件收斂成一段文字。" />
+        <p className="text-sm leading-7 text-white/70">
+          {buildPageDigest(stock ? `${stock.stock_code} ${stock.stock_name}` : stockCode, events)}
+        </p>
+      </Card>
 
       <div className="mt-5">
-        <SectionHeader title="事件流" description="只顯示與這支股票真的有關的事件。" />
+        <SectionHeader title="近期事件" description="只列出通過品質篩選的研究事件，避免大量雜訊卡片。" />
       </div>
 
       {events.length === 0 && !eventState.loading ? (
         <div className="mt-4">
           <EmptyState
-            title="目前沒有這支股票的事件"
-            description="如果今天沒有找到可用事件，這一頁會保持乾淨，不會塞入『無重大更新』之類的假內容。"
+            title="目前沒有可讀事件"
+            description="如果今天沒有有效新聞，這裡會保持空白，不會塞入『無重大更新』假資料。"
           />
         </div>
       ) : null}
 
       <div className="mt-4 space-y-4">
-        {events.map((event) => (
+        {events.slice(0, 6).map((event) => (
           <EventItem key={event.event_id} event={event} />
         ))}
       </div>
     </PageFrame>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+      <div className="text-[11px] text-white/42">{label}</div>
+      <div className="mt-1 text-xl font-semibold text-white">{value}</div>
+    </div>
   );
 }

@@ -25,30 +25,26 @@ def fetch_search_sources(
         return []
 
     provider_name, provider_impl = select_search_provider(provider or state.get("search_provider"), state)
+    if provider_impl is None:
+        state.setdefault("run_errors", []).append(
+            "search provider is unavailable; no mock search fallback unless search_provider=mock"
+        )
+        return []
+
     raw_sources: list[dict[str, Any]] = []
     for keyword in keyword_list:
         try:
             results = provider_impl.search(task, [keyword], state)
         except Exception as exc:
             state.setdefault("run_errors", []).append(f"search provider {provider_name} failed for keyword {keyword}: {exc}")
-            if provider_name != "mock":
-                results = MockSearchProvider().search(task, [keyword], state)
-            else:
-                results = []
+            results = []
 
         for item in results:
             normalized = _normalize_search_item(item)
             if normalized:
                 raw_sources.append(normalized)
 
-    deduped = _dedupe_by_source_url(raw_sources)
-    if not deduped and provider_name != "mock":
-        state.setdefault("run_errors", []).append(
-            f"search provider {provider_name} returned no items; fallback to mock search results"
-        )
-        deduped = _dedupe_by_source_url(MockSearchProvider().search(task, keyword_list, state))
-
-    return deduped
+    return _dedupe_by_source_url(raw_sources)
 
 
 def mock_search_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
@@ -57,22 +53,28 @@ def mock_search_provider(task: dict, keywords: list[str], state: dict | None = N
 
 def tavily_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
     provider_name, provider_impl = select_search_provider("tavily", state)
-    if provider_name == "mock":
-        return MockSearchProvider().search(task, keywords, state)
+    if provider_impl is None:
+        if state is not None:
+            state.setdefault("run_errors", []).append("tavily provider is unavailable")
+        return []
     return provider_impl.search(task, keywords, state)
 
 
 def serpapi_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
     provider_name, provider_impl = select_search_provider("serpapi", state)
-    if provider_name == "mock":
-        return MockSearchProvider().search(task, keywords, state)
+    if provider_impl is None:
+        if state is not None:
+            state.setdefault("run_errors", []).append("serpapi provider is unavailable")
+        return []
     return provider_impl.search(task, keywords, state)
 
 
 def firecrawl_provider(task: dict, keywords: list[str], state: dict | None = None) -> list[dict]:
     provider = FirecrawlProvider()
     if not provider.is_available():
-        return MockSearchProvider().search(task, keywords, state)
+        if state is not None:
+            state.setdefault("run_errors", []).append("firecrawl provider is unavailable")
+        return []
     return provider.search(task, keywords, state)
 
 

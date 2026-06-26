@@ -19,7 +19,7 @@ export function InstitutionWatchPage() {
   return (
     <PageFrame
       title="大行關注"
-      subtitle="聚合大行關注股票與供應鏈相關事件，讓你先看重點，不必自己消化一大串雜訊。"
+      subtitle="聚合 3665、2330、2454、2308 等大行關注股票的研究事件。"
       actions={
         <Button tone="secondary" onClick={reload}>
           <RefreshCcw className="h-4 w-4" />
@@ -27,24 +27,21 @@ export function InstitutionWatchPage() {
         </Button>
       }
     >
-      {loading ? <LoadingState label="正在整理大行關注事件" /> : null}
+      {loading ? <LoadingState label="正在讀取大行關注事件" /> : null}
       {error ? <ErrorState description={error} onRetry={reload} /> : null}
 
       {data ? (
         <div className="space-y-4">
           <Card className="space-y-4">
-            <SectionHeader title="大行關注摘要" description="先把事件整理成一段摘要，避免你一次看到太多沒有意義的卡片。" />
+            <SectionHeader title="大行關注摘要" description="先把事件收斂成摘要，避免一次看到太多雜訊卡片。" />
             <p className="text-sm leading-7 text-white/70">{buildPageDigest("大行關注", data)}</p>
           </Card>
 
-          <SectionHeader title="近期事件" description="只保留近期較有閱讀價值的事件卡片。" />
+          <SectionHeader title="近期事件" description="只保留通過品質篩選的研究事件。" />
           {data.length === 0 ? (
-            <EmptyState
-              title="目前沒有大行關注事件"
-              description="如果今天沒有相關事件，前端會顯示空狀態，不會生成假資料。"
-            />
+            <EmptyState title="目前沒有大行關注事件" description="沒有有效事件時不會生成假資料。" />
           ) : (
-            data.slice(0, 8).map((event) => <EventItem key={event.event_id} event={event} showQuality hideScopeLabel />)
+            data.slice(0, 6).map((event) => <EventItem key={event.event_id} event={event} showQuality hideScopeLabel />)
           )}
         </div>
       ) : null}

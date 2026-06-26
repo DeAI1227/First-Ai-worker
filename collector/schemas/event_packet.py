@@ -17,16 +17,19 @@ from collector.utils.time_utils import today_date
 def build_event_packet(state: dict[str, Any]) -> dict[str, Any]:
     sources = state.get("filtered_sources", [])
     first_source = sources[0] if sources else {}
-    title = first_source.get("title") or f"{state.get('scope_name', '研究')}事件摘要"
+    source_urls = _source_urls(sources)
+
     return {
         "packet_type": "event",
         "collector": COLLECTOR_NAME,
         "collection_date": today_date(),
-        "title": title,
+        "title": _event_title(state, len(source_urls)),
         "event_type": state.get("event_type", "industry"),
         "importance": state.get("importance", "general"),
-        "source_name": first_source.get("source_name", "Mock Source"),
+        "source_name": first_source.get("source_name", ""),
         "source_url": first_source.get("source_url", ""),
+        "source_urls": source_urls,
+        "source_count": len(source_urls),
         "published_at": first_source.get("published_at", ""),
         "ai_summary": state.get("ai_summary", ""),
         "possible_impact": state.get("possible_impact", ""),
@@ -84,3 +87,34 @@ def validate_event_packet(packet: dict[str, Any]) -> list[str]:
         errors.append("prohibited terms found: " + ", ".join(sorted(set(prohibited))))
 
     return errors
+
+
+def _event_title(state: dict[str, Any], source_count: int) -> str:
+    scope = state.get("scope", "")
+    scope_name = state.get("scope_name", "") or "研究主題"
+    stock_code = state.get("target_stock_code", "")
+    stock_name = state.get("target_stock_name", "")
+
+    if scope == "stock" and stock_code:
+        label = f"{stock_code} {stock_name or scope_name}".strip()
+        return f"{label} 今日研究摘要（{source_count} 則來源）"
+    if scope in {"institution", "institution_watch"} and stock_code:
+        label = f"{stock_code} {stock_name or scope_name}".strip()
+        return f"大行關注 {label} 研究摘要（{source_count} 則來源）"
+    if scope == "macro":
+        return f"{scope_name} 大環境研究摘要（{source_count} 則來源）"
+    if scope == "industry":
+        return f"{scope_name} 產業研究摘要（{source_count} 則來源）"
+    return f"{scope_name} 研究摘要（{source_count} 則來源）"
+
+
+def _source_urls(sources: list[dict[str, Any]]) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
+    for source in sources:
+        url = str(source.get("source_url", "") or "").strip()
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        urls.append(url)
+    return urls

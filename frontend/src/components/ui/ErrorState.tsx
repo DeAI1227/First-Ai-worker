@@ -8,7 +8,7 @@ type Props = {
 };
 
 export function ErrorState({
-  title = "載入失敗",
+  title = "資料讀取失敗",
   description,
   onRetry,
 }: Props) {

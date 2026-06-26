@@ -1,4 +1,4 @@
-export function LoadingState({ label = "資料載入中…" }: { label?: string }) {
+export function LoadingState({ label = "資料載入中" }: { label?: string }) {
   return (
     <div className="space-y-3 rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
       <div className="h-4 w-32 animate-pulse rounded-full bg-white/10" />

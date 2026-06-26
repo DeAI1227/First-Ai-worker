@@ -9,7 +9,7 @@ from collector.utils.time_utils import now_iso, today_date
 def build_daily_digest_packet(state: dict[str, Any]) -> dict[str, Any]:
     packet = state.get("event_packet", {})
     importance = packet.get("importance", "general")
-    source_url = packet.get("source_url", "")
+    source_urls = packet.get("source_urls") or ([packet.get("source_url")] if packet.get("source_url") else [])
     quality_summary = _normalize_quality_summary(state.get("quality_summary", {}))
     rejected_reasons = _summarize_rejected_reasons(state.get("rejected_sources", []))
 
@@ -17,7 +17,7 @@ def build_daily_digest_packet(state: dict[str, Any]) -> dict[str, Any]:
         "packet_type": "daily_digest",
         "collector": COLLECTOR_NAME,
         "digest_date": today_date(),
-        "scope": "thermal" if state.get("scope_name") == "??" else state.get("scope", ""),
+        "scope": state.get("scope", ""),
         "scope_name": state.get("scope_name", ""),
         "event_count": 1 if packet else 0,
         "critical_count": 1 if importance == "critical" else 0,
@@ -25,7 +25,7 @@ def build_daily_digest_packet(state: dict[str, Any]) -> dict[str, Any]:
         "general_count": 1 if importance == "general" else 0,
         "top_events": [packet.get("title")] if packet else [],
         "key_takeaways": [packet.get("ai_summary", "")] if packet else [],
-        "source_urls": [source_url] if source_url else [],
+        "source_urls": source_urls,
         "quality_summary": quality_summary,
         "rejected_reasons": rejected_reasons,
         "created_at": now_iso(),
@@ -56,4 +56,3 @@ def _summarize_rejected_reasons(rejected_sources: list[dict[str, Any]]) -> list[
 
     ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
     return [reason for reason, _ in ordered[:5]]
-

@@ -11,12 +11,12 @@ type StockReference = {
 };
 
 export const INDUSTRY_REFERENCE: IndustryReference[] = [
-  { key: "thermal", name: "散熱", rawNames: ["����"] },
-  { key: "power", name: "電力", rawNames: ["�q�O"] },
-  { key: "autonomous-driving", name: "自動駕駛", rawNames: ["�۰ʾr�p"] },
-  { key: "robotics", name: "機器人", rawNames: ["�����H"] },
-  { key: "cpo", name: "CPO 光通訊", rawNames: ["CPO ���q�T"] },
-  { key: "networking", name: "網通", rawNames: ["���q"] },
+  { key: "thermal", name: "散熱", rawNames: ["散熱"] },
+  { key: "power", name: "電力", rawNames: ["電力"] },
+  { key: "autonomous-driving", name: "自動駕駛", rawNames: ["自動駕駛"] },
+  { key: "robotics", name: "機器人", rawNames: ["機器人"] },
+  { key: "cpo", name: "CPO 光通訊", rawNames: ["CPO 光通訊", "CPO光通訊"] },
+  { key: "networking", name: "網通", rawNames: ["網通"] },
 ];
 
 export const STOCK_REFERENCE: StockReference[] = [
@@ -83,33 +83,23 @@ const INDUSTRY_NAME_BY_KEY = new Map<string, string>(
   INDUSTRY_REFERENCE.map((item) => [item.key, item.name] as [string, string]),
 );
 
-const SPECIAL_SCOPE_NAME_MAP = new Map<string, string>([
-  ["�j�����`", "大行關注"],
-  ["��Ƥ��߻ݨD", "資料中心需求"],
-]);
-
 export function normalizeIndustryName(value: string | null | undefined): string {
   if (!value) {
     return "未分類產業";
   }
-
   return INDUSTRY_NAME_BY_RAW.get(value) ?? value;
 }
 
 export function getIndustryKeyByName(industryName: string): string {
-  return INDUSTRY_KEY_BY_NAME.get(industryName) ?? industryName;
+  return INDUSTRY_KEY_BY_NAME.get(industryName) ?? encodeURIComponent(industryName);
 }
 
 export function getIndustryNameByKey(industryKey: string): string {
-  return INDUSTRY_NAME_BY_KEY.get(industryKey) ?? industryKey;
+  return INDUSTRY_NAME_BY_KEY.get(industryKey) ?? decodeURIComponent(industryKey);
 }
 
 export function normalizeStockName(stockCode: string, value: string | null | undefined): string {
-  if (STOCK_REFERENCE_BY_CODE.has(stockCode)) {
-    return STOCK_REFERENCE_BY_CODE.get(stockCode)!.stockName;
-  }
-
-  return value || stockCode;
+  return STOCK_REFERENCE_BY_CODE.get(stockCode)?.stockName ?? value ?? stockCode;
 }
 
 export function getReferenceIndustriesByStockCode(stockCode: string): string[] {
@@ -124,26 +114,25 @@ export function normalizeScopeName(
   if (scope === "industry") {
     return normalizeIndustryName(value);
   }
-
   if (scope === "stock" && stockCode) {
     return normalizeStockName(stockCode, value);
   }
-
-  if (value && SPECIAL_SCOPE_NAME_MAP.has(value)) {
-    return SPECIAL_SCOPE_NAME_MAP.get(value)!;
+  if (scope === "institution_watch" || scope === "institution") {
+    return "大行關注";
   }
-
-  return value || "未命名範圍";
+  if (scope === "macro") {
+    return value || "大環境";
+  }
+  return value || "研究事件";
 }
 
 export function isPlaceholderUrl(value: string): boolean {
-  return value.includes("example.com");
+  return value.includes("example.com") || value.includes("/mock/");
 }
 
 export function isPlaceholderContent(summary: string, sourceUrls: string[]): boolean {
   const lowerSummary = summary.toLowerCase();
   const joinedUrls = sourceUrls.join(" ").toLowerCase();
-
   return (
     sourceUrls.length > 0 &&
     sourceUrls.every(isPlaceholderUrl) &&
