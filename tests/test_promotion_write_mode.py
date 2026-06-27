@@ -19,6 +19,7 @@ class _MockSupabaseClient:
     def __init__(self) -> None:
         self.upserts: list[tuple[str, dict, str | None]] = []
         self.inserts: list[tuple[str, dict]] = []
+        self.deletes: list[tuple[str, dict[str, str]]] = []
 
     def upsert(self, table: str, row: dict, *, on_conflict: str):
         self.upserts.append((table, row, on_conflict))
@@ -27,6 +28,10 @@ class _MockSupabaseClient:
     def insert(self, table: str, row: dict):
         self.inserts.append((table, row))
         return [row]
+
+    def delete(self, table: str, filters: dict[str, str]):
+        self.deletes.append((table, filters))
+        return []
 
 
 def _write_packet(path: Path, payload: dict) -> None:
@@ -183,12 +188,16 @@ class PromotionWriteModeTests(unittest.TestCase):
             self.assertIn("event_relations", upsert_tables)
             self.assertIn("report_relations", upsert_tables)
             self.assertIn("rejected_sources", insert_tables)
+            self.assertTrue(any(table == "event_relations" for table, _ in client.deletes))
+            self.assertTrue(any(table == "report_relations" for table, _ in client.deletes))
 
             event_relations = [row for table, row, _ in client.upserts if table == "event_relations"]
             self.assertTrue(any(row["relation_type"] == "industry" and row["relation_value"] == industry_name for row in event_relations))
             self.assertTrue(any(row["relation_type"] == "stock" and row["relation_value"] == stock_code for row in event_relations))
             self.assertFalse(any(row["relation_type"] == "industry" and row["relation_value"] == stock_code for row in event_relations))
             self.assertFalse(any(row["relation_type"] == "stock" and row["relation_value"] == industry_name for row in event_relations))
+            self.assertTrue(any(filters.get("event_id") == "eq.event_001" for _, filters in client.deletes))
+            self.assertTrue(any(filters.get("report_id") == "eq.report_001" for _, filters in client.deletes))
 
     def test_relation_builder_skips_mismatched_industry_and_stock_values(self) -> None:
         industry_name = TRACKING_INDUSTRIES[0]["industry_name"]

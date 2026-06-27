@@ -54,12 +54,20 @@ class SupabaseClient:
             prefer="return=representation",
         )
 
+    def delete(self, table: str, filters: dict[str, str]) -> list[dict[str, Any]] | dict[str, Any] | None:
+        return self._request(
+            "DELETE",
+            table,
+            params=filters,
+            prefer="return=representation",
+        )
+
     def _request(
         self,
         method: str,
         table: str,
         *,
-        json: list[dict[str, Any]],
+        json: list[dict[str, Any]] | None = None,
         params: dict[str, str] | None = None,
         prefer: str = "",
     ) -> list[dict[str, Any]] | dict[str, Any] | None:
@@ -73,7 +81,14 @@ class SupabaseClient:
             headers["Prefer"] = prefer
 
         try:
-            response = self.session.request(method, endpoint, headers=headers, params=params, json=json, timeout=30)
+            request_kwargs: dict[str, Any] = {
+                "headers": headers,
+                "params": params,
+                "timeout": 30,
+            }
+            if json is not None:
+                request_kwargs["json"] = json
+            response = self.session.request(method, endpoint, **request_kwargs)
         except SSLError:
             if self._can_use_insecure_ssl_fallback() and not self._ssl_fallback_used:
                 self._ssl_fallback_used = True
@@ -83,14 +98,14 @@ class SupabaseClient:
                 )
                 self.session.verify = False
                 try:
-                    response = self.session.request(
-                        method,
-                        endpoint,
-                        headers=headers,
-                        params=params,
-                        json=json,
-                        timeout=30,
-                    )
+                    request_kwargs = {
+                        "headers": headers,
+                        "params": params,
+                        "timeout": 30,
+                    }
+                    if json is not None:
+                        request_kwargs["json"] = json
+                    response = self.session.request(method, endpoint, **request_kwargs)
                 except SSLError as retry_exc:
                     raise RuntimeError(supabase_ssl_error_message("Supabase request")) from retry_exc
             else:

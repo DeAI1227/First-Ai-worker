@@ -28,6 +28,20 @@ FAKE_RSS_XML = """<?xml version="1.0" encoding="UTF-8"?>
 </rss>
 """
 
+FAKE_RSS_SHORT_SUMMARY_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Stock News Feed</title>
+    <item>
+      <title>TSMC daily headline</title>
+      <link>https://example.com/articles/tsmc-daily</link>
+      <pubDate>Tue, 24 Jun 2026 08:00:00 GMT</pubDate>
+      <description>Short summary only.</description>
+    </item>
+  </channel>
+</rss>
+"""
+
 
 class RSSFetcherTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -67,6 +81,36 @@ class RSSFetcherTests(unittest.TestCase):
         self.assertEqual(item["content"], "散熱、水冷與液冷方案仍是伺服器供應鏈關注焦點。")
         self.assertEqual(item["source_type"], "rss")
         self.assertTrue(item["published_at"])
+
+    def test_rss_fetcher_enriches_short_summary_from_article_page(self):
+        task = make_task(scope="stock", scope_name="台積電", stock_code="2330", stock_name="台積電", source_mode="rss")
+        state = {
+            "rss_feed_documents": {"https://example.com/rss": FAKE_RSS_SHORT_SUMMARY_XML},
+            "rss_feeds": [{"source_name": "Stock News Feed", "feed_url": "https://example.com/rss"}],
+        }
+        article_sources = [
+            {
+                "title": "TSMC daily headline",
+                "source_name": "Example News",
+                "source_url": "https://example.com/articles/tsmc-daily",
+                "published_at": "2026-06-24T08:00:00+00:00",
+                "content": "This is the full article body with enough detail to verify that RSS can be enriched into full article text.",
+                "source_type": "http",
+            }
+        ]
+        with patch.object(rss_module, "feedparser", None), patch.object(
+            rss_module,
+            "fetch_http_sources",
+            return_value=article_sources,
+        ) as mocked_http:
+            raw_sources = fetch_rss_sources(task, state)
+
+        self.assertEqual(len(raw_sources), 1)
+        item = raw_sources[0]
+        self.assertEqual(item["source_type"], "rss")
+        self.assertEqual(item["source_url"], "https://example.com/articles/tsmc-daily")
+        self.assertIn("This is the full article body", item["content"])
+        mocked_http.assert_called_once()
 
     def test_rss_failure_does_not_crash_graph(self):
         task = make_task(scope="industry", scope_name="散熱", stock_code="6230", stock_name="尼得科超眾", source_mode="rss")
