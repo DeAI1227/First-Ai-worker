@@ -17,9 +17,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      FASTAPI_BASE_URL: ${{ secrets.FASTAPI_BASE_URL }}
-      API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}
-      PIPELINE_REQUEST_TIMEOUT_SECONDS: "600"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ENVIRONMENT: production
+      ALLOW_INSECURE_SSL: "false"
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+      AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
+      AGNES_API_URL: ${{ secrets.AGNES_API_URL }}
+      AGNES_BASE_URL: ${{ secrets.AGNES_BASE_URL }}
+      AGNES_MODEL: ${{ secrets.AGNES_MODEL }}
+      FIRECRAWL_BASE_URL: ${{ secrets.FIRECRAWL_BASE_URL }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      SEARCH_PROVIDER: firecrawl
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,16 +50,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${FASTAPI_BASE_URL:-}" ]; then
-            echo "FASTAPI_BASE_URL is missing"
+          if [ -z "${SUPABASE_URL:-}" ]; then
+            echo "SUPABASE_URL is missing"
             exit 1
           fi
-          if [ -z "${API_AUTH_TOKEN:-}" ]; then
-            echo "API_AUTH_TOKEN is missing"
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY is missing"
+            exit 1
+          fi
+          if [ -z "${FIRECRAWL_BASE_URL:-}" ]; then
+            echo "FIRECRAWL_BASE_URL is missing"
             exit 1
           fi
           echo "Scheduled run target: 07:00 Asia/Taipei (timezone-aware schedule)"
-          echo "Workflow mode: daily + three-day merged pipeline"
+          echo "Workflow mode: local runner daily + three-day merged pipeline"
 
       - name: Run merged daily pipeline
         id: run_pipeline
@@ -68,6 +82,6 @@ jobs:
             echo "- Trigger: scheduled for 07:00 Asia/Taipei"
             echo "- Cron (UTC): 0 23 * * *"
             echo "- Timezone handling: GitHub Actions schedule is UTC; 23:00 UTC = 07:00 Asia/Taipei"
-            echo "- Mode: grouped daily collect + daily three-day refresh"
-            echo "- Payload target: collect batches, then single ingestion write, then single promotion write"
+            echo "- Mode: local grouped daily collect + daily three-day refresh"
+            echo "- Execution path: GitHub runner directly executes collector, ingestion, and promotion"
           } >> "$GITHUB_STEP_SUMMARY"
