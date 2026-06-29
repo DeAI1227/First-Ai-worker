@@ -69,6 +69,6 @@ jobs:
             echo "- Trigger: scheduled for 07:00 Asia/Taipei"
             echo "- Cron: 0 7 * * *"
             echo "- Timezone: Asia/Taipei"
-            echo "- Mode: merged daily + three-day"
-            echo "- Payload target: multiple smaller /pipeline/run calls"
+            echo "- Mode: grouped daily collect + daily three-day refresh"
+            echo "- Payload target: collect batches, then single ingestion write, then single promotion write"
           } >> "$GITHUB_STEP_SUMMARY"
