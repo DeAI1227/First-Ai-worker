@@ -22,6 +22,7 @@ def score_sources(raw_sources: list[dict[str, Any]], task: dict[str, Any], state
 
     keywords = _build_keywords(task, state)
     stock_hints = _build_stock_hints(task, state)
+    scope = clean_text(task.get("scope", "") or state.get("scope", ""))
 
     for source in raw_sources:
         scored.append(
@@ -30,6 +31,7 @@ def score_sources(raw_sources: list[dict[str, Any]], task: dict[str, Any], state
                 keywords=keywords,
                 stock_hints=stock_hints,
                 seen_urls=seen_urls,
+                scope=scope,
             )
         )
 
@@ -58,6 +60,7 @@ def _score_single_source(
     keywords: list[str],
     stock_hints: list[str],
     seen_urls: set[str],
+    scope: str,
 ) -> dict[str, Any]:
     normalized = dict(source)
     title = clean_text(normalized.get("title", ""))
@@ -115,6 +118,9 @@ def _score_single_source(
     if _contains_any(combined_text, stock_hints):
         score += 10
         reasons.append("matches stock/company hints")
+    elif _scope_requires_target_stock_match(scope) and stock_hints:
+        reasons.append("missing target stock match")
+        rejected = True
 
     if _contains_any(combined_text, RESEARCH_TERMS):
         score += 10
@@ -184,6 +190,10 @@ def _build_stock_hints(task: dict[str, Any], state: dict[str, Any]) -> list[str]
         state.get("target_stock_name", ""),
     ]
     return _unique_clean(hints)
+
+
+def _scope_requires_target_stock_match(scope: str) -> bool:
+    return clean_text(scope).lower() in {"stock", "institution", "institution_watch"}
 
 
 def _is_official_source(source_name: str, source_url: str, source_type: str) -> bool:

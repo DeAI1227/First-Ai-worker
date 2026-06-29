@@ -66,6 +66,28 @@ class SourceFilterTests(unittest.TestCase):
         filtered_state = filter_sources(state)
         self.assertEqual(filtered_state["filtered_sources"], [])
 
+    def test_filter_sources_blocks_stock_scope_articles_without_target_match(self):
+        state = {
+            "scope": "stock",
+            "scope_name": "?????",
+            "target_stock_code": "6230",
+            "target_stock_name": "?????",
+            "raw_sources": [
+                {
+                    "title": "AI thermal supply chain update",
+                    "source_name": "Generic News",
+                    "source_url": "https://example.com/thermal-supply-chain",
+                    "published_at": "2026-06-24T08:00:00+08:00",
+                    "content": "Data center cooling trends and supply chain updates without mentioning the target company.",
+                    "source_type": "http",
+                }
+            ],
+        }
+        filtered_state = filter_sources(state)
+        self.assertEqual(filtered_state["filtered_sources"], [])
+        self.assertEqual(len(filtered_state["rejected_sources"]), 1)
+        self.assertIn("missing target stock match", " ".join(filtered_state["rejected_sources"][0]["quality_reasons"]))
+
 
 if __name__ == "__main__":
     unittest.main()

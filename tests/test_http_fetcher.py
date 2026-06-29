@@ -121,10 +121,10 @@ class HttpFetcherTests(unittest.TestCase):
         state = {
             "source_mode": "http",
             "scope": "stock",
-            "scope_name": "台積電",
+            "scope_name": "?x?n?q",
             "target_stock_code": "2330",
-            "target_stock_name": "台積電",
-            "source_rules": build_stock_source_rules("2330", "台積電"),
+            "target_stock_name": "?x?n?q",
+            "source_rules": build_stock_source_rules("2330", "?x?n?q"),
         }
         with patch.object(source_registry, "fetch_http_sources", return_value=[{"source_type": "http"}]) as mocked_http, patch.object(
             source_registry, "fetch_mock_sources", return_value=[{"source_type": "mock"}]
@@ -133,13 +133,22 @@ class HttpFetcherTests(unittest.TestCase):
 
         self.assertEqual(raw_sources, [{"source_type": "http"}])
         mocked_http.assert_called_once()
-        self.assertEqual(mocked_http.call_args.kwargs["urls"], ["https://tw.stock.yahoo.com/quote/2330.TW/news"])
+        self.assertEqual(
+            mocked_http.call_args.kwargs["urls"],
+            [
+                "https://tw.stock.yahoo.com/quote/2330.TW/news",
+                "https://news.cnyes.com/news/cat/tw_quo",
+                "https://news.cnyes.com/news/cat/stock_report",
+                "https://news.cnyes.com/news/cat/tw_revenue",
+                "https://news.cnyes.com/news/cat/wd_stock",
+            ],
+        )
 
     def test_http_mode_returns_empty_when_no_urls(self):
         state = {
             "source_mode": "http",
             "scope": "industry",
-            "scope_name": "散熱",
+            "scope_name": "?????",
         }
         with patch.object(source_registry, "fetch_mock_sources", return_value=[{"source_type": "mock"}]) as mocked_mock:
             raw_sources = fetch_raw_sources(state)

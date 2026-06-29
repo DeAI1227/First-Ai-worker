@@ -138,6 +138,7 @@ def promote_packets(
             for row in promoted:
                 upsert_row(client, row["target_table"], row)
                 _increment_promoted(batch.promoted, row["target_table"])
+            _replace_child_relations(client, promoted, relations)
             for relation in relations:
                 upsert_row(client, relation["target_table"], relation)
                 relation_key = relation["target_table"]
@@ -187,10 +188,14 @@ def promote_packet(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], bool]:
     if packet_type == "event_packet":
         row = map_event_packet(packet, source_file=source_file)
+        if not source_file:
+            source_file = ""
         relations = [
             {"target_table": "event_relations", **relation}
             for relation in build_event_relations(row, packet)
         ]
+        if relations:
+            relations = _dedupe_relations(relations, parent_key="event_id", parent_id=row["event_id"])
         return ([{"target_table": "events", **row}], relations, False)
     if packet_type == "report_packet":
         row = map_report_packet(packet, source_file=source_file)
@@ -198,6 +203,8 @@ def promote_packet(
             {"target_table": "report_relations", **relation}
             for relation in build_report_relations(row, packet)
         ]
+        if relations:
+            relations = _dedupe_relations(relations, parent_key="report_id", parent_id=row["report_id"])
         return ([{"target_table": "reports", **row}], relations, False)
     if packet_type == "crawl_run_packet":
         return ([{"target_table": "crawl_runs", **map_crawl_run_packet(packet, source_file=source_file)}], [], False)
@@ -386,6 +393,51 @@ def _fallback_run_id_from_source_file(source_file: str) -> str:
 def _increment_promoted(counter: dict[str, int], target_table: str) -> None:
     if target_table in counter:
         counter[target_table] += 1
+
+
+def _dedupe_relations(relations: list[dict[str, Any]], *, parent_key: str, parent_id: str) -> list[dict[str, Any]]:
+    unique: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for relation in relations:
+        relation_type = str(relation.get("relation_type") or "")
+        relation_value = str(relation.get("relation_value") or "")
+        key = (relation_type, relation_value)
+        if key in seen:
+            continue
+        seen.add(key)
+        enriched = dict(relation)
+        enriched[parent_key] = parent_id
+        unique.append(enriched)
+    return unique
+
+
+def _replace_child_relations(
+    client: SupabaseClient,
+    promoted_rows: list[dict[str, Any]],
+    relations: list[dict[str, Any]],
+) -> None:
+    if not relations:
+        return
+
+    relation_target = relations[0].get("target_table", "")
+    if relation_target not in {"event_relations", "report_relations"}:
+        return
+
+    parent_key = "event_id" if relation_target == "event_relations" else "report_id"
+    parent_ids = {
+        str(relation.get(parent_key) or "")
+        for relation in relations
+        if str(relation.get(parent_key) or "")
+    }
+    if not parent_ids:
+        parent_ids = {
+            str(row.get(parent_key) or "")
+            for row in promoted_rows
+            if row.get("target_table") in {"events", "reports"}
+            and str(row.get(parent_key) or "")
+        }
+    for parent_id in parent_ids:
+        client.delete(relation_target, {parent_key: f"eq.{parent_id}"})
 
 
 def _packet_id(packet_type: str, packet: dict[str, Any]) -> str:

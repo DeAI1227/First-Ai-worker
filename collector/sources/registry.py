@@ -45,7 +45,11 @@ def _fetch_rss_only(task: dict, state: dict) -> list[dict]:
 
 
 def _fetch_http_only(task: dict, state: dict) -> list[dict]:
-    http_urls = _resolve_http_urls(state) or _resolve_http_urls_from_source_rules(state)
+    http_urls = _resolve_http_urls(state)
+    if not http_urls:
+        http_urls = _resolve_http_urls_from_source_rules(state)
+    else:
+        http_urls = _dedupe_urls([*_resolve_http_urls_from_source_rules(state), *http_urls])
     sources = fetch_http_sources(task, urls=http_urls, state=state)
     if not sources:
         state.setdefault("run_errors", []).append("http source mode returned no usable sources")
@@ -69,7 +73,11 @@ def _fetch_hybrid(task: dict, state: dict) -> list[dict]:
     if sources:
         return sources
 
-    http_urls = _resolve_http_urls(state) or _resolve_http_urls_from_source_rules(state)
+    http_urls = _resolve_http_urls(state)
+    if not http_urls:
+        http_urls = _resolve_http_urls_from_source_rules(state)
+    else:
+        http_urls = _dedupe_urls([*_resolve_http_urls_from_source_rules(state), *http_urls])
     sources = fetch_http_sources(task, urls=http_urls, state=state)
     if sources:
         return sources
@@ -96,8 +104,8 @@ def _resolve_http_urls(state: dict) -> list[str]:
 
     scope = state.get("scope", "")
     scope_name = state.get("scope_name", "")
-    configured = get_http_source_configs(scope, scope_name)
-    return [item.get("url", "") for item in configured if item.get("url")]
+    configured = [item.get("url", "") for item in get_http_source_configs(scope, scope_name) if item.get("url")]
+    return _dedupe_urls(configured)
 
 
 def _resolve_http_urls_from_source_rules(state: dict) -> list[str]:
@@ -118,3 +126,14 @@ def _resolve_http_urls_from_source_rules(state: dict) -> list[str]:
         seen.add(url)
         urls.append(url)
     return urls
+
+
+def _dedupe_urls(urls: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for url in urls:
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        deduped.append(url)
+    return deduped
