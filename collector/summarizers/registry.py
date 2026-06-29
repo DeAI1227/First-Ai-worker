@@ -10,7 +10,7 @@ def summarize_sources(state: dict[str, Any]) -> dict[str, Any]:
     sources = state.get("filtered_sources", [])
     summarizer_mode = str(state.get("summarizer_mode", "mock")).strip().lower() or "mock"
 
-    if summarizer_mode == "llm":
+    if summarizer_mode in {"llm", "auto"}:
         summary = summarize_with_llm(state, sources, provider=state.get("llm_provider"))
     else:
         summary = summarize_with_mock(state, sources)

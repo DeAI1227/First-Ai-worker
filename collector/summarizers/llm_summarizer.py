@@ -123,7 +123,7 @@ def _fallback_reason(requested_provider: str) -> str:
     if requested_provider == "auto":
         return "LLM summarizer requested but no API key found; fallback to mock summarizer."
     if requested_provider == "agnes":
-        return "AGNES_API_KEY or AGNES_API_URL is missing; fallback to mock summarizer."
+        return "AGNES_API_KEY or AGNES_API_URL/AGNES_BASE_URL is missing; fallback to mock summarizer."
     if requested_provider == "gemini":
         return "GEMINI_API_KEY is missing; fallback to mock summarizer."
     return ""

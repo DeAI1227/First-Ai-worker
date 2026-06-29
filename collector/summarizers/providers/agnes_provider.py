@@ -65,4 +65,4 @@ class AgnesProvider(BaseLLMProvider):
         return bool(self.get_api_key()) and bool(self.get_api_url())
 
     def unavailable_message(self) -> str:
-        return "AGNES_API_KEY and AGNES_API_URL are required"
+        return "AGNES_API_KEY and AGNES_API_URL or AGNES_BASE_URL are required"

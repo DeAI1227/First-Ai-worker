@@ -11,6 +11,7 @@ from unittest.mock import patch
 from collector.graph import run_collector_task
 from collector.summarizers.llm_summarizer import LLM_SUMMARIZATION_PROMPT, build_llm_prompt, summarize_with_llm
 from collector.summarizers.mock_summarizer import summarize_with_mock
+from collector.summarizers.registry import summarize_sources
 from collector.tasks import make_task
 
 
@@ -62,6 +63,29 @@ def _response_with_content(content: str) -> FakeResponse:
 
 
 class SummarizerTests(unittest.TestCase):
+    def test_summarizer_mode_auto_uses_llm_path_when_provider_is_available(self):
+        state = {
+            "scope": "industry",
+            "scope_name": "thermal",
+            "summarizer_mode": "auto",
+            "llm_provider": "auto",
+            "filtered_sources": FAKE_SOURCES,
+            "run_errors": [],
+        }
+        llm_result = {
+            "ai_summary": "這是 Agnes 或 Gemini 產生的摘要。",
+            "possible_impact": "可能影響供應鏈追蹤節奏。",
+            "risk_note": "仍需持續驗證後續公告。",
+            "tags": ["散熱", "供應鏈", "AI 伺服器"],
+            "language": "zh-TW",
+        }
+
+        with patch("collector.summarizers.registry.summarize_with_llm", return_value=llm_result) as llm_mock:
+            result = summarize_sources(state)
+
+        llm_mock.assert_called_once()
+        self.assertEqual(result["ai_summary"], llm_result["ai_summary"])
+
     def test_mock_summarizer_returns_standard_format(self):
         state = {
             "scope": "industry",
@@ -106,7 +130,7 @@ class SummarizerTests(unittest.TestCase):
             result = summarize_with_llm(state, FAKE_SOURCES, provider="agnes")
 
         self.assertEqual(result["language"], "zh-TW")
-        self.assertTrue(any("AGNES_API_KEY or AGNES_API_URL is missing" in error for error in state["run_errors"]))
+        self.assertTrue(any("AGNES_API_KEY or AGNES_API_URL/AGNES_BASE_URL is missing" in error for error in state["run_errors"]))
         self.assertLessEqual(len(result["ai_summary"]), 500)
 
     def test_auto_provider_without_key_falls_back_to_mock(self):
