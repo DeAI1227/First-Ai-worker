@@ -2,8 +2,7 @@ name: Daily AI Research Pipeline
 
 on:
   schedule:
-    - cron: "0 7 * * *"
-      timezone: "Asia/Taipei"
+    - cron: "0 23 * * *"
   workflow_dispatch:
 
 permissions:
@@ -67,8 +66,8 @@ jobs:
             echo "## Daily AI Research Pipeline"
             echo ""
             echo "- Trigger: scheduled for 07:00 Asia/Taipei"
-            echo "- Cron: 0 7 * * *"
-            echo "- Timezone: Asia/Taipei"
+            echo "- Cron (UTC): 0 23 * * *"
+            echo "- Timezone handling: GitHub Actions schedule is UTC; 23:00 UTC = 07:00 Asia/Taipei"
             echo "- Mode: grouped daily collect + daily three-day refresh"
             echo "- Payload target: collect batches, then single ingestion write, then single promotion write"
           } >> "$GITHUB_STEP_SUMMARY"
