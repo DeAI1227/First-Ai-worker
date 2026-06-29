@@ -16,6 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from collector.config.tracking_universe import TRACKING_INDUSTRIES
+from collector.task_batches import all_daily_tasks
 
 
 DEFAULT_SOURCE_MODE = "hybrid"
@@ -23,12 +24,63 @@ DEFAULT_SUMMARIZER_MODE = "auto"
 DEFAULT_LL_PROVIDER = "auto"
 DEFAULT_SEARCH_PROVIDER = "firecrawl"
 DEFAULT_INPUT_PATH = "output/"
+DEFAULT_REQUEST_TIMEOUT = 600
 
 
 @dataclass(frozen=True)
 class PipelineStep:
     name: str
     payload: dict[str, Any]
+
+
+def build_collect_payload_from_task(task: dict[str, Any]) -> dict[str, Any]:
+    scope = str(task.get("scope") or "all").strip() or "all"
+    scope_name = str(task.get("scope_name") or task.get("industry_name") or task.get("macro_topic_name") or "").strip()
+    stock_code = str(task.get("target_stock_code") or task.get("stock_code") or "").strip()
+    stock_name = str(task.get("target_stock_name") or task.get("stock_name") or "").strip()
+    return {
+        "mode": str(task.get("run_mode") or "daily").strip() or "daily",
+        "scope": scope,
+        "scope_name": scope_name,
+        "stock_code": stock_code,
+        "stock_name": stock_name,
+        "source_mode": str(task.get("source_mode") or DEFAULT_SOURCE_MODE),
+        "summarizer_mode": str(task.get("summarizer_mode") or DEFAULT_SUMMARIZER_MODE),
+        "llm_provider": str(task.get("llm_provider") or DEFAULT_LL_PROVIDER),
+        "search_provider": str(task.get("search_provider") or DEFAULT_SEARCH_PROVIDER),
+        "ingestion_dry_run": False,
+        "promotion_dry_run": False,
+        "collect": {
+            "mode": str(task.get("run_mode") or "daily").strip() or "daily",
+            "scope": scope,
+            "scope_name": scope_name,
+            "stock_code": stock_code,
+            "stock_name": stock_name,
+            "source_mode": str(task.get("source_mode") or DEFAULT_SOURCE_MODE),
+            "summarizer_mode": str(task.get("summarizer_mode") or DEFAULT_SUMMARIZER_MODE),
+            "llm_provider": str(task.get("llm_provider") or DEFAULT_LL_PROVIDER),
+            "search_provider": str(task.get("search_provider") or DEFAULT_SEARCH_PROVIDER),
+            "dry_run": False,
+        },
+        "ingestion": {
+            "enabled": True,
+            "input_path": DEFAULT_INPUT_PATH,
+            "packet_type": "all",
+            "dry_run": False,
+        },
+        "promotion": {
+            "enabled": True,
+            "input_path": DEFAULT_INPUT_PATH,
+            "packet_type": "all",
+            "dry_run": False,
+        },
+    }
+
+
+def build_single_task_step(task: dict[str, Any], *, prefix: str = "daily") -> PipelineStep:
+    scope = str(task.get("scope") or "all").strip() or "all"
+    key = _task_key(task)
+    return PipelineStep(f"{prefix}:{scope}:{key}", build_collect_payload_from_task(task))
 
 
 def build_daily_payload(batch: str) -> dict[str, Any]:
@@ -95,10 +147,12 @@ def build_three_day_payload(scope: str, scope_name: str) -> dict[str, Any]:
 
 def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep]:
     steps: list[PipelineStep] = [
-        PipelineStep("daily:industries", build_daily_payload("industries")),
-        PipelineStep("daily:stocks", build_daily_payload("stocks")),
-        PipelineStep("daily:macro", build_daily_payload("macro")),
-        PipelineStep("daily:institution_watch", build_daily_payload("institution_watch")),
+        build_single_task_step(task, prefix="daily") for task in all_daily_tasks(
+            source_mode=DEFAULT_SOURCE_MODE,
+            summarizer_mode=DEFAULT_SUMMARIZER_MODE,
+            llm_provider=DEFAULT_LL_PROVIDER,
+            search_provider=DEFAULT_SEARCH_PROVIDER,
+        )
     ]
 
     if include_three_day:
@@ -107,7 +161,7 @@ def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep
                 continue
             steps.append(
                 PipelineStep(
-                    f"three_day:industry:{industry['industry_name']}",
+                    f"three_day:industry:{industry['industry_id']}",
                     build_three_day_payload("industry", str(industry["industry_name"])),
                 )
             )
@@ -115,12 +169,31 @@ def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep
 
     return steps
 
+
+def _task_key(task: dict[str, Any]) -> str:
+    scope = str(task.get("scope") or "all").strip().lower()
+    if scope == "macro":
+        return str(task.get("macro_topic_id") or task.get("scope_name") or "macro").strip()
+    if scope == "industry":
+        return str(task.get("industry_id") or task.get("target_stock_code") or task.get("scope_name") or "industry").strip()
+    if scope == "stock":
+        return str(task.get("target_stock_code") or task.get("scope_name") or "stock").strip()
+    if scope in {"institution", "institution_watch"}:
+        return str(task.get("institution_watch_code") or task.get("target_stock_code") or "institution").strip()
+    return str(task.get("scope_name") or scope or "task").strip()
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the daily GitHub Actions pipeline with warm-up and retries.")
     parser.add_argument("--base-url", default=os.getenv("FASTAPI_BASE_URL", "").strip(), help="FastAPI base URL")
     parser.add_argument("--token", default=os.getenv("API_AUTH_TOKEN", "").strip(), help="API auth token")
     parser.add_argument("--skip-three-day", action="store_true", help="Run only the daily batches")
     parser.add_argument("--max-retries", type=int, default=3, help="Retries per HTTP call")
+    parser.add_argument(
+        "--request-timeout",
+        type=int,
+        default=int(os.getenv("PIPELINE_REQUEST_TIMEOUT_SECONDS", str(DEFAULT_REQUEST_TIMEOUT))),
+        help="Timeout in seconds for each /pipeline/run call",
+    )
     parser.add_argument("--health-retries", type=int, default=6, help="Retries for the warm-up health check")
     return parser.parse_args()
 
@@ -157,6 +230,10 @@ def http_json(
     except error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         return int(exc.code), body
+    except TimeoutError as exc:
+        return 598, f"Request timed out after {timeout}s: {exc}"
+    except error.URLError as exc:
+        return 599, f"Network error: {exc}"
 
 
 def wait_for_health(base_url: str, token: str, retries: int) -> None:
@@ -174,12 +251,24 @@ def wait_for_health(base_url: str, token: str, retries: int) -> None:
     raise SystemExit("Backend health check never became ready")
 
 
-def call_pipeline_step(base_url: str, token: str, step: PipelineStep, max_retries: int) -> dict[str, Any]:
+def call_pipeline_step(
+    base_url: str,
+    token: str,
+    step: PipelineStep,
+    max_retries: int,
+    request_timeout: int,
+) -> dict[str, Any]:
     url = f"{base_url.rstrip('/')}/pipeline/run"
-    retryable_statuses = {502, 503, 504}
+    retryable_statuses = {502, 503, 504, 599}
 
     for attempt in range(1, max_retries + 1):
-        status, body = http_json(method="POST", url=url, token=token, payload=step.payload, timeout=300)
+        status, body = http_json(
+            method="POST",
+            url=url,
+            token=token,
+            payload=step.payload,
+            timeout=max(request_timeout, 30),
+        )
         print(f"[{step.name}] attempt {attempt} -> HTTP {status}")
         if body.strip():
             print(body)
@@ -323,7 +412,7 @@ def main() -> int:
     wait_for_health(base_url, token, args.health_retries)
 
     steps = build_pipeline_steps(include_three_day=not args.skip_three_day)
-    results = [call_pipeline_step(base_url, token, step, args.max_retries) for step in steps]
+    results = [call_pipeline_step(base_url, token, step, args.max_retries, args.request_timeout) for step in steps]
     summary = render_summary(results)
     write_step_summary(summary)
 

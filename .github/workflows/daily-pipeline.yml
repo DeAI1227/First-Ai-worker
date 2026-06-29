@@ -16,10 +16,11 @@ concurrency:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       FASTAPI_BASE_URL: ${{ secrets.FASTAPI_BASE_URL }}
       API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}
+      PIPELINE_REQUEST_TIMEOUT_SECONDS: "600"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
