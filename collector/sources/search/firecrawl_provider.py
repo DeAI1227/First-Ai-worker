@@ -21,10 +21,16 @@ class FirecrawlProvider(BaseSearchProvider):
     default_keyword_limit = 3
 
     def get_base_url(self) -> str:
-        return _read_base_url_env() or self.default_base_url
+        configured = _read_base_url_env()
+        if not configured:
+            return self.default_base_url
+
+        if _looks_like_localhost(configured) and not _is_development_environment():
+            return self.default_base_url
+        return configured
 
     def is_available(self) -> bool:
-        return bool(self.get_api_key() or _read_base_url_env())
+        return bool(self.get_api_key())
 
     def search(self, task: dict[str, Any], keywords: list[str], state: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         base_url = self.get_base_url()
@@ -118,6 +124,21 @@ def _read_base_url_env() -> str:
     import os
 
     return clean_text(os.getenv(FirecrawlProvider.base_url_env, ""))
+
+
+def _is_development_environment() -> bool:
+    import os
+
+    environment = clean_text(os.getenv("ENVIRONMENT", "development"))
+    return environment.lower() == "development"
+
+
+def _looks_like_localhost(value: str) -> bool:
+    parsed = urlparse(value)
+    hostname = (parsed.hostname or "").strip().lower()
+    if not hostname:
+        return False
+    return hostname in {"localhost", "127.0.0.1", "::1"}
 
 
 def _resolve_timeout_seconds(state: dict[str, Any] | None) -> float:

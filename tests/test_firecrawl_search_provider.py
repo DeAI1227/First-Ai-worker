@@ -71,6 +71,37 @@ class FirecrawlSearchProviderTests(unittest.TestCase):
         self.assertIn("Cooling demand remains strong", matched[0]["content"])
         self.assertEqual(mocked_post.call_args.args[0], "https://api.firecrawl.dev/v2/search")
 
+    def test_firecrawl_provider_ignores_localhost_base_url_outside_development(self):
+        class FakeResponse:
+            def raise_for_status(self) -> None:
+                return None
+
+            def json(self) -> dict[str, object]:
+                return {"success": True, "data": []}
+
+        with patch.dict(
+            os.environ,
+            {
+                "ENVIRONMENT": "production",
+                "FIRECRAWL_API_KEY": "fc-test-key",
+                "FIRECRAWL_BASE_URL": "http://localhost:3002",
+            },
+            clear=True,
+        ), patch("collector.sources.search.firecrawl_provider.requests.post", return_value=FakeResponse()) as mocked_post:
+            provider = FirecrawlProvider()
+            provider.search(
+                {
+                    "scope": "industry",
+                    "scope_name": "thermal",
+                    "source_mode": "search",
+                    "source_rules": [],
+                },
+                ["thermal"],
+                {},
+            )
+
+        self.assertEqual(mocked_post.call_args.args[0], "https://api.firecrawl.dev/v2/search")
+
     def test_firecrawl_provider_filters_results_by_allowed_domains(self):
         task = make_task(
             scope="industry",

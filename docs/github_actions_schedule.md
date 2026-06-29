@@ -19,9 +19,17 @@ The workflow:
 3. Reads these required secrets:
    - `FASTAPI_BASE_URL`
    - `API_AUTH_TOKEN`
-4. Calls `POST /pipeline/run` on the FastAPI backend.
-5. Prints the response and fails cleanly when the response status is `failed`.
-6. Warns when the response status is `partial_success`.
+4. Warms the backend with `GET /health` before the main run.
+5. Calls `POST /pipeline/run` several times in smaller chunks instead of one huge synchronous request:
+   - daily industry batch
+   - daily stock batch
+   - daily macro batch
+   - daily institution-watch batch
+   - three-day industry reports
+   - three-day macro report
+6. Retries transient `502 / 503 / 504` responses so Render cold-starts are less likely to fail the run.
+7. Prints the response and fails cleanly when the response status is `failed`.
+8. Warns when the response status is `partial_success`.
 
 ## Required GitHub secrets
 
@@ -42,6 +50,8 @@ A successful run should show:
 - `errors=0`
 
 A partial success is still a valid run, but it should be inspected.
+
+The key operational change is that the workflow no longer sends one giant request that can sit on a cold Render instance for too long. It now breaks the work into smaller requests so the backend has a better chance to finish before timeout.
 
 ## Why GitHub Actions is the official scheduler
 
