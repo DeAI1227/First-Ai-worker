@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/github_daily_pipeline.py
+          python -u scripts/github_daily_pipeline.py
 
       - name: Write job summary
         if: always()

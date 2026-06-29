@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -135,6 +137,8 @@ def parse_args() -> argparse.Namespace:
 def run_local_pipeline_steps(steps: list[PipelineStep]) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for step in steps:
+        started_at = time.perf_counter()
+        print(f"[pipeline] starting {step.name} ({step.endpoint})", flush=True)
         try:
             result = run_local_step(step)
         except Exception as exc:  # pragma: no cover - defensive
@@ -154,7 +158,15 @@ def run_local_pipeline_steps(steps: list[PipelineStep]) -> list[dict[str, Any]]:
                 ],
                 "output_files": [],
             }
-        results.append(normalize_local_result(step, result))
+        normalized = normalize_local_result(step, result)
+        elapsed = time.perf_counter() - started_at
+        print(
+            f"[pipeline] finished {step.name} status={normalized['status']} "
+            f"wrote_to_supabase={normalized['wrote_to_supabase']} "
+            f"outputs={len(normalized['output_files'])} elapsed={elapsed:.1f}s",
+            flush=True,
+        )
+        results.append(normalized)
     return results
 
 
