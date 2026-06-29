@@ -25,6 +25,13 @@ GitHub Actions `schedule` triggers now support an IANA timezone. That makes the 
 
 This is the **official** free cloud scheduler for the project.
 
+The daily workflow now does two things in one scheduled run:
+
+1. Runs the daily backend collection/write flow in smaller category batches.
+2. Runs the three-day report flow for the main surfaced scopes.
+
+That split is intentional: it keeps each request shorter and makes `502` errors from Render cold starts much less likely.
+
 Recommended workflow file:
 
 - `.github/workflows/daily-pipeline.yml`
@@ -50,6 +57,16 @@ Recommended secrets:
 - Ingestion write mode requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - Promotion write mode requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - If those environment variables are missing, the run should fail cleanly and write a report that explains the problem.
+
+## Why the daily workflow is split into smaller calls
+
+The backend still uses a synchronous `/pipeline/run` endpoint, so a single huge request can time out when:
+
+- Render is cold-starting
+- Firecrawl is slow
+- the batch contains many tasks
+
+To reduce `502` risk, the GitHub Actions workflow now sends several smaller `/pipeline/run` requests instead of one giant request. That keeps the whole daily pipeline conceptually "one run" while reducing timeout pressure.
 
 ## Reports
 

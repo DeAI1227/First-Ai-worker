@@ -110,6 +110,8 @@ python scripts/run_autonomous_once.py
 
 GitHub Actions 是目前正式使用的免費雲端排程器。每天早上 07:00 Taipei time 會觸發後端 pipeline。
 
+這個每日 workflow 現在會把 **daily** 和 **three-day** 兩段流程一起跑完，但會拆成多個較小的 `/pipeline/run` 請求，避免單一長請求在 Render 冷啟動時更容易撞到 502。
+
 相關設定請看：
 
 - [`docs/github_actions_schedule.md`](docs/github_actions_schedule.md)
