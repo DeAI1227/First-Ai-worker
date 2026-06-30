@@ -12,34 +12,31 @@ python scripts/e2e_mvp_smoke.py
 
 ## GitHub Actions daily schedule
 
-If you want the pipeline to run every day at **07:00 Asia/Taipei**, the workflow can use a timezone-aware schedule:
-
-```yaml
-on:
-  schedule:
-    - cron: "0 7 * * *"
-      timezone: "Asia/Taipei"
-```
-
-GitHub Actions `schedule` triggers now support an IANA timezone. That makes the intent clearer than converting 07:00 Taipei time into UTC by hand.
-
 This is the **official** free cloud scheduler for the project.
 
-The daily workflow now does two things in one scheduled run:
+The scheduled backend is now split into three workflows:
 
-1. Runs the daily backend collection/write flow in smaller category batches.
-2. Runs the three-day report flow for the main surfaced scopes.
+1. `.github/workflows/daily-core.yml`
+2. `.github/workflows/stock-pipeline.yml`
+3. `.github/workflows/three-day-refresh.yml`
 
-That split is intentional: it keeps each request shorter and makes `502` errors from Render cold starts much less likely.
+Schedule mapping:
 
-Recommended workflow file:
-
-- `.github/workflows/daily-pipeline.yml`
+- `0 23 * * *` → 07:00 Asia/Taipei → daily core
+- `20 23 * * *` → 07:20 Asia/Taipei → stock pipeline
+- `40 23 * * *` → 07:40 Asia/Taipei → three-day refresh
 
 Recommended secrets:
 
-- `FASTAPI_BASE_URL`
-- `API_AUTH_TOKEN`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+- `AGNES_API_KEY`
+- `AGNES_API_URL` or `AGNES_BASE_URL`
+- `AGNES_MODEL`
+- `FIRECRAWL_BASE_URL`
+- `FIRECRAWL_API_KEY`
 
 ## How to use dry-run
 
@@ -58,15 +55,21 @@ Recommended secrets:
 - Promotion write mode requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - If those environment variables are missing, the run should fail cleanly and write a report that explains the problem.
 
-## Why the daily workflow is split into smaller calls
+## Why the daily workflow is split
 
-The backend still uses a synchronous `/pipeline/run` endpoint, so a single huge request can time out when:
+The old design packed:
 
-- Render is cold-starting
-- Firecrawl is slow
-- the batch contains many tasks
+- macro
+- industries
+- stocks
+- institution watch
+- three-day reports
+- ingestion
+- promotion
 
-To reduce `502` risk, the GitHub Actions workflow now sends several smaller `/pipeline/run` requests instead of one giant request. That keeps the whole daily pipeline conceptually "one run" while reducing timeout pressure.
+into one scheduled job.
+
+That made single runs too long. The new split keeps each workflow smaller, easier to observe, and less likely to fail as one giant unit.
 
 ## Reports
 

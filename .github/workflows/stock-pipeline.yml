@@ -1,21 +1,21 @@
-name: Daily AI Research Pipeline
+name: Stock Pipeline
 
 on:
   schedule:
-    - cron: "0 23 * * *"
+    - cron: "20 23 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: daily-ai-research-pipeline
+  group: stock-pipeline
   cancel-in-progress: false
 
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -62,26 +62,27 @@ jobs:
             echo "FIRECRAWL_BASE_URL is missing"
             exit 1
           fi
-          echo "Scheduled run target: 07:00 Asia/Taipei (timezone-aware schedule)"
-          echo "Workflow mode: local runner daily + three-day merged pipeline"
+          if [ -z "${FIRECRAWL_API_KEY:-}" ]; then
+            echo "FIRECRAWL_API_KEY is missing"
+            exit 1
+          fi
+          echo "Scheduled run target: 07:20 Asia/Taipei (timezone-aware schedule)"
+          echo "Workflow mode: tracked stock batch only"
 
-      - name: Run merged daily pipeline
-        id: run_pipeline
+      - name: Run stock pipeline
         shell: bash
         run: |
           set -euo pipefail
-          python -u scripts/github_daily_pipeline.py
+          python -u scripts/github_daily_pipeline.py --daily-batch stocks
 
       - name: Write job summary
         if: always()
         shell: bash
         run: |
           {
-            echo "## Daily AI Research Pipeline"
+            echo "## Stock Pipeline"
             echo ""
-            echo "- Trigger: scheduled for 07:00 Asia/Taipei"
-            echo "- Cron (UTC): 0 23 * * *"
-            echo "- Timezone handling: GitHub Actions schedule is UTC; 23:00 UTC = 07:00 Asia/Taipei"
-            echo "- Mode: local grouped daily collect + daily three-day refresh"
-            echo "- Execution path: GitHub runner directly executes collector, ingestion, and promotion"
+            echo "- Trigger: scheduled for 07:20 Asia/Taipei"
+            echo "- Cron (UTC): 20 23 * * *"
+            echo "- Execution path: GitHub runner executes stock batch, then ingestion and promotion"
           } >> "$GITHUB_STEP_SUMMARY"

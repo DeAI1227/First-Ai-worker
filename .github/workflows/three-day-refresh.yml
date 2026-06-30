@@ -1,0 +1,71 @@
+name: Three-Day Refresh
+
+on:
+  schedule:
+    - cron: "40 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: three-day-refresh
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ENVIRONMENT: production
+      ALLOW_INSECURE_SSL: "false"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ]; then
+            echo "SUPABASE_URL is missing"
+            exit 1
+          fi
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY is missing"
+            exit 1
+          fi
+          echo "Scheduled run target: 07:40 Asia/Taipei (timezone-aware schedule)"
+          echo "Workflow mode: daily three-day report refresh"
+
+      - name: Run three-day refresh
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -u scripts/github_daily_pipeline.py --three-day-industries --three-day-macro
+
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Three-Day Refresh"
+            echo ""
+            echo "- Trigger: scheduled for 07:40 Asia/Taipei"
+            echo "- Cron (UTC): 40 23 * * *"
+            echo "- Execution path: GitHub runner executes three-day report refresh, then ingestion and promotion"
+          } >> "$GITHUB_STEP_SUMMARY"

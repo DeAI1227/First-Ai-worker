@@ -30,6 +30,7 @@ DEFAULT_LL_PROVIDER = "auto"
 DEFAULT_SEARCH_PROVIDER = "firecrawl"
 DEFAULT_INPUT_PATH = "output/"
 DEFAULT_COLLECT_BATCHES = ("macro", "industries", "stocks", "institution_watch")
+DAILY_BATCH_CHOICES = ("macro", "industries", "stocks", "institution_watch")
 
 
 @dataclass(frozen=True)
@@ -80,10 +81,15 @@ def build_promotion_payload() -> dict[str, Any]:
     }
 
 
-def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep]:
+def build_pipeline_steps(
+    *,
+    daily_batches: tuple[str, ...],
+    include_three_day_industries: bool,
+    include_three_day_macro: bool,
+) -> list[PipelineStep]:
     steps: list[PipelineStep] = []
 
-    for batch in DEFAULT_COLLECT_BATCHES:
+    for batch in daily_batches:
         steps.append(
             PipelineStep(
                 name=f"collect:{batch}",
@@ -92,7 +98,7 @@ def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep
             )
         )
 
-    if include_three_day:
+    if include_three_day_industries:
         for industry in TRACKING_INDUSTRIES:
             if not industry.get("enabled", True):
                 continue
@@ -103,6 +109,8 @@ def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep
                     payload=build_three_day_collect_payload("industry", str(industry["industry_name"])),
                 )
             )
+
+    if include_three_day_macro:
         steps.append(
             PipelineStep(
                 name="collect:three_day:macro:macro_environment",
@@ -129,8 +137,24 @@ def build_pipeline_steps(*, include_three_day: bool = True) -> list[PipelineStep
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the GitHub Actions daily + three-day backend pipeline.")
-    parser.add_argument("--skip-three-day", action="store_true", help="Run only the daily collection batches")
+    parser = argparse.ArgumentParser(description="Run a segmented GitHub Actions backend pipeline.")
+    parser.add_argument(
+        "--daily-batch",
+        action="append",
+        choices=DAILY_BATCH_CHOICES,
+        dest="daily_batches",
+        help="Daily collect batch to run. Repeat to run multiple batches.",
+    )
+    parser.add_argument(
+        "--three-day-industries",
+        action="store_true",
+        help="Run three-day report refresh for all enabled industries.",
+    )
+    parser.add_argument(
+        "--three-day-macro",
+        action="store_true",
+        help="Run three-day macro report refresh.",
+    )
     return parser.parse_args()
 
 
@@ -318,7 +342,20 @@ def unique_strings(values: list[str]) -> list[str]:
 
 def main() -> int:
     args = parse_args()
-    steps = build_pipeline_steps(include_three_day=not args.skip_three_day)
+    if args.daily_batches:
+        daily_batches = tuple(args.daily_batches)
+        include_three_day_industries = bool(args.three_day_industries)
+        include_three_day_macro = bool(args.three_day_macro)
+    else:
+        daily_batches = DEFAULT_COLLECT_BATCHES
+        include_three_day_industries = True
+        include_three_day_macro = True
+
+    steps = build_pipeline_steps(
+        daily_batches=daily_batches,
+        include_three_day_industries=include_three_day_industries,
+        include_three_day_macro=include_three_day_macro,
+    )
     results = run_local_pipeline_steps(steps)
     summary = render_summary(results)
     write_step_summary(summary)

@@ -1,0 +1,91 @@
+name: Daily Core Pipeline
+
+on:
+  schedule:
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-core-pipeline
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ENVIRONMENT: production
+      ALLOW_INSECURE_SSL: "false"
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+      AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
+      AGNES_API_URL: ${{ secrets.AGNES_API_URL }}
+      AGNES_BASE_URL: ${{ secrets.AGNES_BASE_URL }}
+      AGNES_MODEL: ${{ secrets.AGNES_MODEL }}
+      FIRECRAWL_BASE_URL: ${{ secrets.FIRECRAWL_BASE_URL }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      SEARCH_PROVIDER: firecrawl
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ]; then
+            echo "SUPABASE_URL is missing"
+            exit 1
+          fi
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY is missing"
+            exit 1
+          fi
+          if [ -z "${FIRECRAWL_BASE_URL:-}" ]; then
+            echo "FIRECRAWL_BASE_URL is missing"
+            exit 1
+          fi
+          if [ -z "${FIRECRAWL_API_KEY:-}" ]; then
+            echo "FIRECRAWL_API_KEY is missing"
+            exit 1
+          fi
+          echo "Scheduled run target: 07:00 Asia/Taipei (timezone-aware schedule)"
+          echo "Workflow mode: daily core batches (macro, industries, institution_watch)"
+
+      - name: Run daily core pipeline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -u scripts/github_daily_pipeline.py \
+            --daily-batch macro \
+            --daily-batch industries \
+            --daily-batch institution_watch
+
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Daily Core Pipeline"
+            echo ""
+            echo "- Trigger: scheduled for 07:00 Asia/Taipei"
+            echo "- Cron (UTC): 0 23 * * *"
+            echo "- Execution path: GitHub runner executes macro, industries, institution-watch, then ingestion and promotion"
+          } >> "$GITHUB_STEP_SUMMARY"

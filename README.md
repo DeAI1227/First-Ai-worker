@@ -108,14 +108,23 @@ python scripts/run_autonomous_once.py
 
 ### 3. 官方排程
 
-GitHub Actions 是目前正式使用的免費雲端排程器。每天早上 07:00 Taipei time 會觸發後端 pipeline。
+GitHub Actions 是目前正式使用的免費雲端排程器。為了避免單一 job 工作量過大，排程已經拆成三條：
 
-這個每日 workflow 現在會把 **daily** 和 **three-day** 兩段流程一起跑完，但會拆成多個較小的 `/pipeline/run` 請求，避免單一長請求在 Render 冷啟動時更容易撞到 502。
+- [`.github/workflows/daily-core.yml`](.github/workflows/daily-core.yml)
+  - 07:00 Asia/Taipei
+  - `macro + industries + institution_watch + ingestion + promotion`
+- [`.github/workflows/stock-pipeline.yml`](.github/workflows/stock-pipeline.yml)
+  - 07:20 Asia/Taipei
+  - `stocks + ingestion + promotion`
+- [`.github/workflows/three-day-refresh.yml`](.github/workflows/three-day-refresh.yml)
+  - 07:40 Asia/Taipei
+  - `three_day industry + three_day macro + ingestion + promotion`
+
+這三條 workflow 都直接在 GitHub runner 上執行本地 Python pipeline，不再依賴 Render 承接排程主流程，因此不需要用單一超長同步請求去撞 Render。
 
 相關設定請看：
 
 - [`docs/github_actions_schedule.md`](docs/github_actions_schedule.md)
-- [`.github/workflows/daily-pipeline.yml`](.github/workflows/daily-pipeline.yml)
 
 ### 4. 跑 batch all
 
@@ -204,6 +213,10 @@ LLM / Search providers 可先選填，沒有就 fallback mock。
 - `FIRECRAWL_BASE_URL`
 - `FIRECRAWL_API_KEY`
 - `SEARCH_PROVIDER=firecrawl`
+- `TAVILY_API_KEY`
+- `SERPAPI_API_KEY`
+- `BRAVE_SEARCH_API_KEY`（預留）
+- `EXA_API_KEY`（預留）
 
 ### 排程器
 
