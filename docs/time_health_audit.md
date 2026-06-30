@@ -16,7 +16,9 @@ I reviewed the timing-related parts of the repository, especially:
 - `promotion/promotion_report.py`
 - `api/services/pipeline_service.py`
 - `scripts/run_autonomous_once.py`
-- `.github/workflows/daily-pipeline.yml`
+- `.github/workflows/daily-core.yml`
+- `.github/workflows/stock-pipeline.yml`
+- `.github/workflows/three-day-refresh.yml`
 - `n8n_workflows/autonomous_daily_pipeline.json`
 - `docs/pipeline_runbook.md`
 - `docs/deployment_wiring_checklist.md`
@@ -30,14 +32,17 @@ The intended daily trigger is **07:00 Asia/Taipei**.
 
 ### GitHub Actions
 
-GitHub Actions now supports timezone-aware schedules. The workflow is configured so the daily run target is explicitly:
+GitHub Actions now uses explicit UTC cron values that map to Taipei time:
 
-- `0 7 * * *`
-- `timezone: Asia/Taipei`
+- `0 23 * * *` → 07:00 Asia/Taipei
+- `20 23 * * *` → 07:20 Asia/Taipei
+- `40 23 * * *` → 07:40 Asia/Taipei
 
 This is documented in:
 
-- `.github/workflows/daily-pipeline.yml`
+- `.github/workflows/daily-core.yml`
+- `.github/workflows/stock-pipeline.yml`
+- `.github/workflows/three-day-refresh.yml`
 - `docs/pipeline_runbook.md`
 
 ### n8n workflow template
