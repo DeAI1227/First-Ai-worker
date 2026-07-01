@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from time import sleep
 from typing import Any
 from urllib.parse import urlparse
 
@@ -66,16 +67,13 @@ class FirecrawlProvider(BaseSearchProvider):
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
-            try:
-                response = requests.post(
-                    _build_search_endpoint(base_url),
-                    json=payload,
-                    headers=headers,
-                    timeout=timeout_seconds,
-                )
-                response.raise_for_status()
-            except requests.RequestException as exc:  # pragma: no cover - network failure guarded by fallback tests
-                raise SearchProviderError(f"Firecrawl request failed for keyword {keyword}: {exc}") from exc
+            response = _post_with_retry(
+                _build_search_endpoint(base_url),
+                payload,
+                headers=headers,
+                timeout_seconds=timeout_seconds,
+                keyword=keyword,
+            )
 
             data = _safe_json(response)
             if not data.get("success", True):
@@ -118,6 +116,43 @@ class FirecrawlProvider(BaseSearchProvider):
 
 def _build_search_endpoint(base_url: str) -> str:
     return f"{base_url.rstrip('/')}/v2/search"
+
+
+def _post_with_retry(
+    url: str,
+    payload: dict[str, Any],
+    *,
+    headers: dict[str, str],
+    timeout_seconds: float,
+    keyword: str,
+    max_attempts: int = 3,
+) -> requests.Response:
+    retryable_status_codes = {429, 500, 502, 503, 504}
+    last_exc: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=timeout_seconds,
+            )
+            status_code = getattr(response, "status_code", 200)
+            if status_code in retryable_status_codes:
+                raise SearchProviderError(
+                    f"Firecrawl returned HTTP {status_code} for keyword {keyword}"
+                )
+            if hasattr(response, "raise_for_status"):
+                response.raise_for_status()
+            return response
+        except requests.RequestException as exc:
+            last_exc = exc
+        except SearchProviderError as exc:
+            last_exc = exc
+        if attempt >= max_attempts:
+            break
+        sleep(0.75 * attempt)
+    raise SearchProviderError(f"Firecrawl request failed for keyword {keyword}: {last_exc}") from last_exc
 
 
 def _read_base_url_env() -> str:

@@ -12,7 +12,7 @@ from collector.utils.time_utils import today_date
 def map_event_packet(packet: dict[str, Any], *, source_file: str | None = None) -> dict[str, Any]:
     scope, scope_name, run_id = _derive_context(packet, source_file)
     return {
-        "event_id": str(packet.get("event_id") or _stable_packet_id("event", packet, source_file)),
+        "event_id": str(packet.get("event_id") or _stable_packet_id("event", packet)),
         "run_id": run_id,
         "event_date": str(packet.get("event_date") or packet.get("collection_date") or _date_from_source_file(source_file) or today_date()),
         "scope": scope,
@@ -34,7 +34,7 @@ def map_event_packet(packet: dict[str, Any], *, source_file: str | None = None) 
 def map_daily_digest_packet(packet: dict[str, Any], *, source_file: str | None = None) -> dict[str, Any]:
     scope, scope_name, run_id = _derive_context(packet, source_file)
     return {
-        "digest_id": str(packet.get("digest_id") or _stable_packet_id("digest", packet, source_file)),
+        "digest_id": str(packet.get("digest_id") or _stable_packet_id("digest", packet)),
         "run_id": run_id,
         "digest_date": str(packet.get("digest_date") or packet.get("created_at", "")[:10] or _date_from_source_file(source_file) or today_date()),
         "scope": scope,
@@ -50,7 +50,7 @@ def map_daily_digest_packet(packet: dict[str, Any], *, source_file: str | None =
 def map_report_packet(packet: dict[str, Any], *, source_file: str | None = None) -> dict[str, Any]:
     scope, scope_name, run_id = _derive_context(packet, source_file)
     return {
-        "report_id": str(packet.get("report_id") or _stable_packet_id("report", packet, source_file)),
+        "report_id": str(packet.get("report_id") or _stable_packet_id("report", packet)),
         "run_id": run_id,
         "report_date": str(packet.get("report_date") or packet.get("period_end") or _date_from_source_file(source_file) or today_date()),
         "report_type": str(packet.get("report_type", "") or "full_report"),
@@ -198,12 +198,11 @@ def _run_id_from_source_file(source_file: str | None) -> str:
     return ""
 
 
-def _stable_packet_id(prefix: str, packet: dict[str, Any], source_file: str | None) -> str:
+def _stable_packet_id(prefix: str, packet: dict[str, Any], source_file: str | None = None) -> str:
     payload = json.dumps(
         {
             "prefix": prefix,
-            "packet": packet,
-            "source_file": source_file or "",
+            "packet": _canonical_packet_for_id(prefix, packet, source_file),
         },
         ensure_ascii=False,
         sort_keys=True,
@@ -211,4 +210,65 @@ def _stable_packet_id(prefix: str, packet: dict[str, Any], source_file: str | No
     ).encode("utf-8")
     digest = hashlib.sha1(payload).hexdigest()[:16]
     return f"{prefix}_{digest}"
+
+
+def _canonical_packet_for_id(prefix: str, packet: dict[str, Any], source_file: str | None = None) -> dict[str, Any]:
+    if prefix == "event":
+        return {
+            "scope": str(packet.get("scope") or _scope_from_source_file(source_file) or ""),
+            "scope_name": str(packet.get("scope_name") or _scope_name_from_source_file(source_file) or ""),
+            "event_type": str(packet.get("event_type") or ""),
+            "event_date": str(packet.get("event_date") or packet.get("collection_date") or _date_from_source_file(source_file) or today_date()),
+            "source_urls": _sorted_unique_strings(_source_urls_from_event(packet)),
+            "related_industries": _sorted_unique_strings(_ensure_list(packet.get("related_industries", []))),
+            "related_stocks": _sorted_unique_strings(_ensure_list(packet.get("related_stocks", []))),
+            "related_macro_topics": _sorted_unique_strings(_ensure_list(packet.get("related_macro_topics", []))),
+            "related_institution_watch": _sorted_unique_strings(_ensure_list(packet.get("related_institution_watch", []))),
+        }
+    if prefix == "digest":
+        return {
+            "scope": str(packet.get("scope") or _scope_from_source_file(source_file) or ""),
+            "scope_name": str(packet.get("scope_name") or _scope_name_from_source_file(source_file) or ""),
+            "digest_date": str(packet.get("digest_date") or packet.get("created_at", "")[:10] or _date_from_source_file(source_file) or today_date()),
+        }
+    if prefix == "report":
+        return {
+            "scope": str(packet.get("scope") or _scope_from_source_file(source_file) or ""),
+            "scope_name": str(packet.get("scope_name") or _scope_name_from_source_file(source_file) or ""),
+            "report_type": str(packet.get("report_type") or ""),
+            "period_start": str(packet.get("period_start") or ""),
+            "period_end": str(packet.get("period_end") or ""),
+        }
+    if prefix == "run":
+        return {
+            "scope": str(packet.get("scope") or _scope_from_source_file(source_file) or ""),
+            "scope_name": str(packet.get("scope_name") or _scope_name_from_source_file(source_file) or ""),
+            "run_date": str(packet.get("run_date") or _date_from_source_file(source_file) or today_date()),
+            "mode": str(packet.get("mode") or packet.get("run_mode") or "daily"),
+        }
+    return _remove_volatile_fields(packet)
+
+
+def _remove_volatile_fields(packet: dict[str, Any]) -> dict[str, Any]:
+    volatile_keys = {
+        "run_id",
+        "created_at",
+        "updated_at",
+        "finished_at",
+        "started_at",
+        "collection_date",
+        "digest_date",
+        "report_date",
+        "event_date",
+        "packet_id",
+        "digest_id",
+        "report_id",
+        "event_id",
+    }
+    return {key: value for key, value in packet.items() if key not in volatile_keys}
+
+
+def _sorted_unique_strings(values: list[Any]) -> list[str]:
+    cleaned = sorted({str(value).strip() for value in values if str(value).strip()})
+    return cleaned
 
