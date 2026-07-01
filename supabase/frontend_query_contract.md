@@ -29,6 +29,7 @@ It does not read Python code or `output/` JSON directly.
 ### 總覽頁
 
 Read from `view_dashboard_events` for the latest curated event stream.
+Read from `view_latest_crawl_run` for the dashboard source-quality summary and latest execution metadata.
 
 ### 產業追蹤頁
 

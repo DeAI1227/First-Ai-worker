@@ -96,7 +96,7 @@ export function StockDetailPage() {
       </Card>
 
       <div className="mt-5">
-        <SectionHeader title="近期事件" description="只列出通過品質篩選的研究事件，避免大量雜訊卡片。" />
+        <SectionHeader title="近期事件" description="先看摘要，再展開原始事件。" />
       </div>
 
       {events.length === 0 && !eventState.loading ? (
@@ -108,11 +108,18 @@ export function StockDetailPage() {
         </div>
       ) : null}
 
-      <div className="mt-4 space-y-4">
-        {events.slice(0, 6).map((event) => (
-          <EventItem key={event.event_id} event={event} />
-        ))}
-      </div>
+      {events.length > 0 ? (
+        <details className="mt-4 rounded-[24px] border border-white/8 bg-black/20 p-4">
+          <summary className="cursor-pointer list-none text-sm font-medium text-white/80">
+            展開原始事件（{events.length} 則）
+          </summary>
+          <div className="mt-4 space-y-4">
+            {events.slice(0, 6).map((event) => (
+              <EventItem key={event.event_id} event={event} />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </PageFrame>
   );
 }

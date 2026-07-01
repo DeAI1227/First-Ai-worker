@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+import os
 
 from collector.coverage_report import build_coverage_report, write_coverage_report
 from collector.graph import run_collector_task, run_three_day_report_task
@@ -25,23 +27,47 @@ def run_batch_tasks(
     output_files: list[str] = []
     run_errors: list[str] = []
 
-    for task in tasks:
-        try:
-            runner = run_three_day_report_task if task.get("run_mode") == "three_day" else run_collector_task
-            state = runner(task)
-            results.append(state)
-            output_files.extend(state.get("output_paths", []))
-            run_errors.extend(str(error) for error in state.get("run_errors", []))
-        except Exception as exc:  # pragma: no cover - defensive batch guard
-            results.append(
-                {
+    if not tasks:
+        summary = build_batch_summary(
+            batch_id=batch_id,
+            batch_type=batch_type,
+            started_at=started_at,
+            finished_at=now_iso(),
+            tasks=[],
+            output_files=[],
+            run_errors=[],
+        )
+        coverage_report = build_coverage_report(tasks, results, coverage_date=today_date())
+        summary["coverage_report"] = coverage_report
+        summary["coverage_report_path"] = write_coverage_report(coverage_report)
+        summary["batch_report_path"] = write_batch_summary(summary)
+        return summary
+
+    max_workers = _resolve_batch_max_workers(len(tasks), batch_type=batch_type)
+    indexed_results: list[tuple[int, dict[str, Any]]] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(_run_single_batch_task, index, task): index
+            for index, task in enumerate(tasks)
+        }
+        for future in as_completed(future_map):
+            index = future_map[future]
+            task = tasks[index]
+            try:
+                result = future.result()
+            except Exception as exc:  # pragma: no cover - defensive batch guard
+                result = {
                     "task_id": task.get("task_id", ""),
                     "status": "failed",
                     "output_paths": [],
                     "run_errors": [str(exc)],
                 }
-            )
-            run_errors.append(str(exc))
+            indexed_results.append((index, result))
+            output_files.extend(result.get("output_paths", []))
+            run_errors.extend(str(error) for error in result.get("run_errors", []))
+
+    indexed_results.sort(key=lambda item: item[0])
+    results = [result for _, result in indexed_results]
 
     summary = build_batch_summary(
         batch_id=batch_id,
@@ -108,6 +134,28 @@ def write_batch_summary(summary: dict[str, Any], *, output_root: Path | None = N
     root = output_root or BATCH_LOGS_ROOT
     path = root / f"batch_run_{timestamp}.json"
     return write_json(path, summary)
+def _run_single_batch_task(index: int, task: dict[str, Any]) -> dict[str, Any]:
+    runner = run_three_day_report_task if task.get("run_mode") == "three_day" else run_collector_task
+    print(f"[pipeline] starting {index + 1}/{task.get('task_id', 'task')} ({task.get('scope', '')}:{task.get('scope_name', '')})", flush=True)
+    state = runner(task)
+    print(
+        f"[pipeline] finished {index + 1}/{task.get('task_id', 'task')} status={state.get('status')} "
+        f"outputs={len(state.get('output_paths', []))}",
+        flush=True,
+    )
+    return state
+
+
+def _resolve_batch_max_workers(task_count: int, *, batch_type: str) -> int:
+    raw_value = os.getenv("BATCH_MAX_WORKERS", "4").strip()
+    try:
+        configured = max(1, int(raw_value))
+    except ValueError:
+        configured = 4
+    if batch_type == "stocks":
+        configured = max(configured, 4)
+    return min(configured, max(1, task_count))
+
 
 
 def dedupe_preserve_order(values: list[str]) -> list[str]:

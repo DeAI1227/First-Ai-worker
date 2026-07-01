@@ -60,3 +60,9 @@ export async function getUnreadCounts(userId: string) {
     .maybeSingle();
 }
 
+export async function getLatestCrawlRun() {
+  return supabase
+    .from("view_latest_crawl_run")
+    .select("*")
+    .maybeSingle();
+}

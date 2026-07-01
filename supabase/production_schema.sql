@@ -88,6 +88,33 @@ create index if not exists idx_crawl_runs_scope on crawl_runs (scope);
 create index if not exists idx_crawl_runs_scope_name on crawl_runs (scope_name);
 create index if not exists idx_crawl_runs_source_mode on crawl_runs (source_mode);
 
+create or replace view view_latest_crawl_run as
+select
+  run_id,
+  run_date,
+  started_at,
+  finished_at,
+  status,
+  mode,
+  scope,
+  scope_name,
+  source_mode,
+  summarizer_mode,
+  llm_provider,
+  search_provider,
+  total_sources_count,
+  accepted_sources_count,
+  rejected_sources_count,
+  quality_summary,
+  rejected_reasons,
+  output_files,
+  run_errors,
+  raw_packet,
+  created_at
+from crawl_runs
+order by created_at desc, finished_at desc, run_id desc
+limit 1;
+
 create table if not exists events (
   id uuid primary key default gen_random_uuid(),
   event_id text not null unique,

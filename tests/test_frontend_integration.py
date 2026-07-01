@@ -35,6 +35,7 @@ class FrontendIntegrationTests(unittest.TestCase):
         contract_text = (self.project_root / "frontend_integration" / "supabase_views_contract.md").read_text(encoding="utf-8")
         self.assertIn("股票清單頁 -> `view_stock_cards`", contract_text)
         self.assertIn("Do not generate fake no-news events.", contract_text)
+        self.assertIn("view_latest_crawl_run", contract_text)
 
     def test_query_examples_include_read_updates(self) -> None:
         query_text = (self.project_root / "frontend_integration" / "supabase_query_examples.md").read_text(encoding="utf-8")

@@ -67,14 +67,21 @@ export function IndustryDetailPage() {
           </Card>
 
           <div className="space-y-4">
-            <SectionHeader title="近期事件" description="只顯示已經通過資料品質篩選的研究事件。" />
+            <SectionHeader title="近期事件" description="先看摘要，再展開原始事件。" />
             {events.length === 0 ? (
               <EmptyState
                 title={`${industryName} 目前沒有可讀事件`}
                 description="如果今天沒有有效新聞，這裡會保持空白，由前端顯示 empty state。"
               />
             ) : (
-              events.slice(0, 6).map((event) => <EventItem key={event.event_id} event={event} hideScopeLabel />)
+              <details className="rounded-[24px] border border-white/8 bg-black/20 p-4">
+                <summary className="cursor-pointer list-none text-sm font-medium text-white/80">
+                  展開原始事件（{events.length} 則）
+                </summary>
+                <div className="mt-4 space-y-4">
+                  {events.slice(0, 6).map((event) => <EventItem key={event.event_id} event={event} hideScopeLabel />)}
+                </div>
+              </details>
             )}
           </div>
         </div>

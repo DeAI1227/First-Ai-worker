@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import tempfile
-from contextlib import ExitStack
+from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -70,7 +70,8 @@ def run_autonomous_once() -> dict[str, Any]:
 
 
 def main() -> int:
-    result = run_autonomous_once()
+    with redirect_stdout(sys.stderr):
+        result = run_autonomous_once()
     payload = {
         "status": result.get("status"),
         "autonomous_ready": result.get("autonomous_ready"),

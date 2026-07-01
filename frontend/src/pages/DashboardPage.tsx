@@ -44,7 +44,7 @@ export function DashboardPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-              <QualitySummaryMini summary={data.dashboardEvents[0]?.quality_summary} />
+              <QualitySummaryMini summary={data.latestCrawlRun?.quality_summary ?? data.dashboardEvents[0]?.quality_summary} />
               <Card className="space-y-4">
                 <SectionHeader
                   title="未讀狀態"
@@ -69,16 +69,21 @@ export function DashboardPage() {
             </Card>
 
             <Card className="space-y-4">
-              <SectionHeader title="最新研究事件" description="只顯示已通過資料品質篩選的事件。" />
-              <div className="space-y-4">
-                {data.dashboardEvents.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-6 text-center text-sm text-white/46">
-                    目前沒有可顯示的研究事件。請確認後端 pipeline 是否已寫入 Supabase production views。
+              <SectionHeader title="最新研究事件" description="先看摘要，再展開原始事件。" />
+              {data.dashboardEvents.length === 0 ? (
+                <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-6 text-center text-sm text-white/46">
+                  目前沒有可顯示的研究事件。請確認後端 pipeline 是否已寫入 Supabase production views。
+                </div>
+              ) : (
+                <details className="rounded-[24px] border border-white/8 bg-black/20 p-4">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white/80">
+                    展開原始事件（{data.dashboardEvents.length} 則）
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    {data.dashboardEvents.slice(0, 6).map((event) => <EventItem key={event.event_id} event={event} showQuality />)}
                   </div>
-                ) : (
-                  data.dashboardEvents.slice(0, 6).map((event) => <EventItem key={event.event_id} event={event} showQuality />)
-                )}
-              </div>
+                </details>
+              )}
             </Card>
           </div>
 

@@ -46,31 +46,34 @@ export function EventItem({ event, showQuality = false, hideScopeLabel = false }
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
           <div className="text-[11px] uppercase tracking-[0.2em] text-white/35">風險提醒</div>
-          <p className="mt-2 text-sm leading-6 text-white/60">{event.risk_note}</p>
+          <p className="mt-2 text-sm leading-6 text-white/60 line-clamp-4">{event.risk_note}</p>
         </div>
-        <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-          <div className="text-[11px] uppercase tracking-[0.2em] text-white/35">來源連結</div>
-          {event.source_urls?.length ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {event.source_urls.slice(0, 5).map((url, index) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="max-w-full truncate rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-white/58 transition hover:bg-white/10 hover:text-white"
-                >
-                  來源 {index + 1}
-                </a>
-              ))}
+        <details className="rounded-2xl border border-white/8 bg-black/20 p-4">
+          <summary className="cursor-pointer list-none text-[11px] uppercase tracking-[0.2em] text-white/35">來源連結與品質</summary>
+          <div className="mt-3 space-y-4">
+            <div>
+              {event.source_urls?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {event.source_urls.slice(0, 5).map((url, index) => (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="max-w-full truncate rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-white/58 transition hover:bg-white/10 hover:text-white"
+                    >
+                      來源 {index + 1}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm leading-6 text-white/50">這筆事件沒有可公開開啟的來源連結。</p>
+              )}
             </div>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-white/50">這筆事件沒有可公開開啟的來源連結。</p>
-          )}
-        </div>
+            {showQuality && "quality_summary" in event ? <QualitySummaryMini summary={event.quality_summary} /> : null}
+          </div>
+        </details>
       </div>
-
-      {showQuality && "quality_summary" in event ? <QualitySummaryMini summary={event.quality_summary} /> : null}
     </Card>
   );
 }

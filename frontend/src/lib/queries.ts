@@ -3,6 +3,7 @@ import type {
   DashboardEvent,
   IndustryCard,
   InstitutionWatchEvent,
+  LatestCrawlRun,
   MacroEvent,
   RecentReport,
   StockCard,
@@ -184,8 +185,19 @@ export async function getUnreadCounts(userId: string): Promise<UnreadCount> {
   ) as UnreadCount;
 }
 
+export async function getLatestCrawlRun(): Promise<LatestCrawlRun | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.from("view_latest_crawl_run").select("*").maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as LatestCrawlRun | null;
+}
+
 export async function getSystemSnapshot(userId: string) {
-  const [dashboardEvents, industryCards, stockCards, macroEvents, institutionEvents, reports, unreadCounts] =
+  const [dashboardEvents, industryCards, stockCards, macroEvents, institutionEvents, reports, unreadCounts, latestCrawlRun] =
     await Promise.all([
       getDashboardEvents(),
       getIndustryCards(),
@@ -194,6 +206,7 @@ export async function getSystemSnapshot(userId: string) {
       getInstitutionWatchEvents(),
       getRecentReports(),
       getUnreadCounts(userId),
+      getLatestCrawlRun(),
     ]);
 
   return {
@@ -204,5 +217,6 @@ export async function getSystemSnapshot(userId: string) {
     institutionEvents,
     reports,
     unreadCounts,
+    latestCrawlRun,
   };
 }

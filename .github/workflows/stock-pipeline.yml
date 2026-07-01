@@ -15,7 +15,7 @@ concurrency:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -30,6 +30,7 @@ jobs:
       FIRECRAWL_BASE_URL: ${{ secrets.FIRECRAWL_BASE_URL }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       SEARCH_PROVIDER: firecrawl
+      BATCH_MAX_WORKERS: "4"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,7 +68,7 @@ jobs:
             exit 1
           fi
           echo "Scheduled run target: 07:20 Asia/Taipei (timezone-aware schedule)"
-          echo "Workflow mode: tracked stock batch only"
+          echo "Workflow mode: tracked stock batch only (parallelized for faster completion)"
 
       - name: Run stock pipeline
         shell: bash

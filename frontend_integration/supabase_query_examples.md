@@ -78,6 +78,15 @@ const { data, error } = await supabase
   .maybeSingle();
 ```
 
+## Query latest crawl run
+
+```ts
+const { data, error } = await supabase
+  .from("view_latest_crawl_run")
+  .select("*")
+  .maybeSingle();
+```
+
 ## Mark an event as read
 
 ```ts
@@ -107,5 +116,5 @@ const { error } = await supabase.from("user_read_status").upsert({
 - `stocks` is reference data.
 - `events` contains real events only.
 - Stocks with no events still appear in `view_stock_cards`.
+- The dashboard source-quality card should read the latest crawl run summary, not a random event row.
 - Do not create fake "no news" events in the backend.
-

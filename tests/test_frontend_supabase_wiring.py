@@ -25,6 +25,7 @@ class FrontendSupabaseWiringTests(unittest.TestCase):
         self.assertIn('from("view_institution_watch_events")', query_text)
         self.assertIn('from("view_recent_reports")', query_text)
         self.assertIn('from("view_unread_counts")', query_text)
+        self.assertIn('from("view_latest_crawl_run")', query_text)
 
     def test_read_status_file_uses_user_read_status(self) -> None:
         read_text = (self.project_root / "frontend_integration" / "src" / "readStatus.ts").read_text(encoding="utf-8")

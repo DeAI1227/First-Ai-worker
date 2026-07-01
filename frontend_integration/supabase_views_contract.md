@@ -74,6 +74,13 @@ The frontend should read from views instead of assembling page data from raw tab
 - Frontend display: badge counts and top-bar unread indicators.
 - Empty state: show zeros when there is no read-status row for a user.
 
+### `view_latest_crawl_run`
+
+- Purpose: the most recent execution metadata and source-quality summary.
+- Fields: `run_id`, `run_date`, `started_at`, `finished_at`, `status`, `mode`, `scope`, `scope_name`, `source_mode`, `summarizer_mode`, `llm_provider`, `search_provider`, `total_sources_count`, `accepted_sources_count`, `rejected_sources_count`, `quality_summary`, `rejected_reasons`, `output_files`, `run_errors`, `raw_packet`, `created_at`
+- Frontend display: the dashboard's source-quality mini card and system status snapshot.
+- Empty state: if the view returns no row yet, the frontend can fall back to zeros or hide the card.
+
 ## Core guardrails
 
 - Stocks without events still exist in `stocks`.

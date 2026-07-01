@@ -51,7 +51,7 @@ export function sanitizeEvent<T extends EventLike>(event: T): T | null {
 
   return {
     ...event,
-    ai_summary: truncate(summary, 500),
+    ai_summary: truncate(summary, 1500),
     possible_impact: impact || "這則事件可能影響後續研究判讀，但仍需搭配更多來源驗證。",
     risk_note: risk || "單一事件不宜過度延伸，請回到原始來源與後續公告交叉確認。",
     source_urls: sourceUrls,
@@ -67,7 +67,7 @@ export function sanitizeReport(report: RecentReport): RecentReport | null {
   return {
     ...report,
     report_title: title,
-    report_body: truncate(body, 1200),
+    report_body: truncate(body, 1500),
   };
 }
 
@@ -79,11 +79,13 @@ export function buildPageDigest(label: string, events: EventLike[]): string {
         .filter(Boolean)
         .map((item) => truncate(item, 160)),
     ),
-  ).slice(0, 3);
+  ).slice(0, 6);
 
   if (summaries.length === 0) {
     return `${label} 目前沒有可讀的研究事件。若今天沒有有效新聞，頁面會維持空狀態，不會用假摘要填滿。`;
   }
 
-  return `${label} 本頁共整理 ${events.length} 則研究事件。重點包括：${summaries.join("；")}`;
+  const digest = `${label} 本頁共整理 ${events.length} 則研究事件。重點包括：${summaries.join("；")}`;
+
+  return truncate(digest, 1500);
 }
