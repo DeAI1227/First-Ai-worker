@@ -206,6 +206,59 @@ class IngestionPackageTests(unittest.TestCase):
         self.assertEqual(row["raw_packet"], packet)
         self.assertEqual(row["tags"], ["thermal"])
 
+    def test_mappers_generate_stable_ids_without_source_file(self):
+        event_packet = {
+            "run_id": "run-1",
+            "event_date": "2026-06-17",
+            "scope": "industry",
+            "scope_name": "?q?O",
+            "event_type": "industry",
+            "importance": "important",
+            "language": "zh-TW",
+            "ai_summary": "summary",
+            "possible_impact": "impact",
+            "risk_note": "risk",
+            "tags": ["thermal"],
+            "related_industries": ["?q?O"],
+            "related_stocks": ["1513"],
+            "source_urls": ["https://example.com/a"],
+        }
+        digest_packet = {
+            "run_id": "run-1",
+            "created_at": "2026-06-17T01:00:00+08:00",
+            "digest_date": "2026-06-17",
+            "scope": "industry",
+            "scope_name": "?q?O",
+            "summary": "digest summary",
+            "important_events": ["event-1"],
+            "quality_summary": {"total_sources": 1},
+            "rejected_reasons": ["missing url"],
+        }
+        report_packet = {
+            "run_id": "run-1",
+            "created_at": "2026-06-17T01:00:00+08:00",
+            "report_date": "2026-06-17",
+            "report_type": "industry_report",
+            "scope": "industry",
+            "scope_name": "?q?O",
+            "importance": "important",
+            "report_title": "?q?O???i",
+            "report_body": "body",
+            "quality_summary": {"total_sources": 1},
+        }
+
+        event_row_a = map_event_packet(event_packet, source_file="output/daily/?q?O/event_a.json")
+        event_row_b = map_event_packet({**event_packet, "run_id": "run-2"}, source_file="output/daily/?q?O/event_b.json")
+        digest_row_a = map_daily_digest_packet(digest_packet, source_file="output/daily/?q?O/digest_a.json")
+        digest_row_b = map_daily_digest_packet({**digest_packet, "run_id": "run-2", "created_at": "2026-06-17T09:00:00+08:00"}, source_file="output/daily/?q?O/digest_b.json")
+        report_row_a = map_report_packet(report_packet, source_file="output/three_day/?q?O/report_a.json")
+        report_row_b = map_report_packet({**report_packet, "run_id": "run-2", "created_at": "2026-06-17T09:00:00+08:00"}, source_file="output/three_day/?q?O/report_b.json")
+
+        self.assertEqual(event_row_a["event_id"], event_row_b["event_id"])
+        self.assertEqual(digest_row_a["digest_id"], digest_row_b["digest_id"])
+        self.assertEqual(report_row_a["report_id"], report_row_b["report_id"])
+
+
     def test_mappers_map_daily_digest_packet(self):
         packet = {
             "digest_id": "digest-1",

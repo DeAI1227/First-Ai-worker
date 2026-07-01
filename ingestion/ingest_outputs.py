@@ -319,7 +319,10 @@ def print_summary(summary: dict[str, Any], *, dry_run: bool) -> None:
 def normalize_filter(packet_type_filter: str | None) -> str | None:
     if not packet_type_filter:
         return None
-    return PACKET_TYPE_ALIASES.get(packet_type_filter, packet_type_filter)
+    normalized = PACKET_TYPE_ALIASES.get(packet_type_filter, packet_type_filter)
+    if normalized == "all":
+        return None
+    return normalized
 
 
 def _normalize_packet_type_filter_label(packet_type_filter: str | None) -> str:

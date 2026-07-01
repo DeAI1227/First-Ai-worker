@@ -28,6 +28,9 @@ SQL_FILES = [
     PROJECT_ROOT / "supabase" / "staging_schema.sql",
     PROJECT_ROOT / "supabase" / "seed_reference_data.sql",
     PROJECT_ROOT / "supabase" / "20260622_align_summarizer_mode.sql",
+    PROJECT_ROOT / "supabase" / "20260701_allow_agnes_llm_provider.sql",
+    PROJECT_ROOT / "supabase" / "20260701_allow_firecrawl_search_provider.sql",
+    PROJECT_ROOT / "supabase" / "20260701_dedupe_event_tables.sql",
 ]
 
 VIEW_NAMES = [
