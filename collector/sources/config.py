@@ -26,26 +26,7 @@ YAHOO_RSS_FEEDS: list[dict[str, str]] = [
     },
 ]
 
-CNYES_MACRO_RSS_FEEDS: list[dict[str, str]] = [
-    {
-        "source_name": "鉅亨網 RSS - 大環境",
-        "feed_url": "https://news.cnyes.com/rss/v1/news/category/wd_macro",
-    },
-]
-
 CNYES_TW_STOCK_RSS_FEEDS: list[dict[str, str]] = [
-    {
-        "source_name": "鉅亨網 RSS - 台股總覽",
-        "feed_url": "https://news.cnyes.com/rss/v1/news/category/tw_quo",
-    },
-    {
-        "source_name": "鉅亨網 RSS - 個股研究",
-        "feed_url": "https://news.cnyes.com/rss/v1/news/category/stock_report",
-    },
-    {
-        "source_name": "鉅亨網 RSS - 營收速報",
-        "feed_url": "https://news.cnyes.com/rss/v1/news/category/tw_revenue",
-    },
     {
         "source_name": "鉅亨網 RSS - 盤勢新聞",
         "feed_url": "https://news.cnyes.com/rss/v1/news/category/wd_stock",
@@ -55,7 +36,6 @@ CNYES_TW_STOCK_RSS_FEEDS: list[dict[str, str]] = [
 
 RSS_SOURCE_CONFIG: dict[str, list[dict[str, str]]] = {
     "macro": [
-        *deepcopy(CNYES_MACRO_RSS_FEEDS),
         *deepcopy(YAHOO_RSS_FEEDS),
     ],
     "thermal": [
@@ -64,100 +44,36 @@ RSS_SOURCE_CONFIG: dict[str, list[dict[str, str]]] = {
             "feed_url": "https://www.tomshardware.com/feeds/all",
         },
         *deepcopy(YAHOO_RSS_FEEDS),
-        *deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
     ],
-    "power": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
-    "autodrive": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
-    "robot": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
-    "cpo": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
-    "networking": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
+    "power": deepcopy(YAHOO_RSS_FEEDS),
+    "autodrive": deepcopy(YAHOO_RSS_FEEDS),
+    "robot": deepcopy(YAHOO_RSS_FEEDS),
+    "cpo": deepcopy(YAHOO_RSS_FEEDS),
+    "networking": deepcopy(YAHOO_RSS_FEEDS),
     "stock": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
     "institution": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
 }
 
 HTTP_SOURCE_CONFIG: dict[str, list[dict[str, str]]] = {
-    "macro": [
-        {
-            "source_name": "鉅亨網大環境分類頁",
-            "url": "https://news.cnyes.com/news/cat/wd_macro",
-        },
-    ],
+    "macro": [],
     "thermal": [
         {
-            "source_name": "鉅亨網台股分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_quo",
-        },
-        {
-            "source_name": "鉅亨網個股研究分類頁",
-            "url": "https://news.cnyes.com/news/cat/stock_report",
-        },
-        {
-            "source_name": "鉅亨網營收速報分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_revenue",
-        },
-        {
             "source_name": "鉅亨網盤勢新聞分類頁",
             "url": "https://news.cnyes.com/news/cat/wd_stock",
         },
     ],
-    "power": [
-        {
-            "source_name": "鉅亨網台股分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_quo",
-        },
-        {
-            "source_name": "鉅亨網個股研究分類頁",
-            "url": "https://news.cnyes.com/news/cat/stock_report",
-        },
-        {
-            "source_name": "鉅亨網營收速報分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_revenue",
-        },
-        {
-            "source_name": "鉅亨網盤勢新聞分類頁",
-            "url": "https://news.cnyes.com/news/cat/wd_stock",
-        },
-    ],
+    "power": [],
     "autodrive": [],
     "robot": [],
     "cpo": [],
     "networking": [],
     "stock": [
         {
-            "source_name": "鉅亨網台股分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_quo",
-        },
-        {
-            "source_name": "鉅亨網個股研究分類頁",
-            "url": "https://news.cnyes.com/news/cat/stock_report",
-        },
-        {
-            "source_name": "鉅亨網營收速報分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_revenue",
-        },
-        {
             "source_name": "鉅亨網盤勢新聞分類頁",
             "url": "https://news.cnyes.com/news/cat/wd_stock",
         },
     ],
-    "institution": [
-        {
-            "source_name": "鉅亨網台股分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_quo",
-        },
-        {
-            "source_name": "鉅亨網個股研究分類頁",
-            "url": "https://news.cnyes.com/news/cat/stock_report",
-        },
-        {
-            "source_name": "鉅亨網營收速報分類頁",
-            "url": "https://news.cnyes.com/news/cat/tw_revenue",
-        },
-        {
-            "source_name": "鉅亨網盤勢新聞分類頁",
-            "url": "https://news.cnyes.com/news/cat/wd_stock",
-        },
-    ],
+    "institution": deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
 }
 
 SOURCE_MODE_PRIORITY = {

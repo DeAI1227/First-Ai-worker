@@ -14,6 +14,7 @@ except ImportError:  # pragma: no cover - optional dependency
 
 from collector.sources.base import clean_text, extract_feed_override, normalize_source_item, parse_datetime_value
 from collector.sources.config import get_rss_source_configs
+from collector.sources.entrypoints import build_taiwan_stock_rss_feed
 from collector.sources.http_fetcher import fetch_http_sources
 
 RSS_FETCH_TIMEOUT_SECONDS = 10
@@ -23,9 +24,7 @@ RSS_ARTICLE_ENRICH_MIN_CONTENT_CHARS = 160
 def fetch_rss_sources(task: dict, state: dict | None = None) -> list[dict]:
     if state is None:
         state = {}
-    rss_feeds = state.get("rss_feeds")
-    if rss_feeds is None:
-        rss_feeds = get_rss_source_configs(task.get("scope", ""), task.get("scope_name", ""))
+    rss_feeds = _resolve_rss_feeds(task, state)
 
     if not rss_feeds:
         return []
@@ -48,6 +47,66 @@ def fetch_rss_sources(task: dict, state: dict | None = None) -> list[dict]:
             state.setdefault("run_errors", []).append(f"rss fetch unexpected error for {feed_url}: {exc}")
 
     return raw_sources
+
+
+def _resolve_rss_feeds(task: dict, state: dict) -> list[dict[str, str]]:
+    configured_feeds = state.get("rss_feeds")
+    if configured_feeds is None:
+        configured_feeds = get_rss_source_configs(task.get("scope", ""), task.get("scope_name", ""))
+
+    feeds: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+
+    def _append_feed(feed: dict[str, str] | None) -> None:
+        if not isinstance(feed, dict):
+            return
+        feed_url = clean_text(feed.get("feed_url", ""))
+        if not feed_url or feed_url in seen_urls:
+            return
+        seen_urls.add(feed_url)
+        feeds.append(
+            {
+                "source_name": clean_text(feed.get("source_name", "")) or "RSS Source",
+                "feed_url": feed_url,
+            }
+        )
+
+    for feed in _derive_stock_rss_feeds(task, state):
+        _append_feed(feed)
+
+    if isinstance(configured_feeds, list):
+        for feed in configured_feeds:
+            _append_feed(feed)
+
+    return feeds
+
+
+def _derive_stock_rss_feeds(task: dict, state: dict) -> list[dict[str, str]]:
+    scope = clean_text(task.get("scope", "") or state.get("scope", "")).lower()
+    stock_code = _resolve_stock_code(task, state)
+    stock_name = clean_text(task.get("target_stock_name", "") or state.get("target_stock_name", ""))
+
+    if not stock_code:
+        return []
+
+    if scope not in {"stock", "industry", "institution", "institution_watch"}:
+        return []
+
+    return [build_taiwan_stock_rss_feed(stock_code, stock_name)]
+
+
+def _resolve_stock_code(task: dict, state: dict) -> str:
+    candidates = [
+        task.get("target_stock_code", ""),
+        task.get("stock_code", ""),
+        state.get("target_stock_code", ""),
+        state.get("stock_code", ""),
+    ]
+    for value in candidates:
+        stock_code = clean_text(value)
+        if stock_code:
+            return stock_code
+    return ""
 
 
 def _download_rss_feed(feed_url: str) -> str:

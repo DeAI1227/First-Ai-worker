@@ -5,7 +5,6 @@ from collector.sources.http_fetcher import fetch_http_sources
 from collector.sources.mock_fetcher import fetch_mock_sources
 from collector.sources.entrypoints import (
     build_cnyes_category_rules,
-    build_mops_lookup_rule,
     build_stock_source_rules,
     build_taiwan_stock_news_url,
     build_taiwan_stock_news_urls,
@@ -22,7 +21,6 @@ __all__ = [
     "fetch_rss_sources",
     "fetch_search_sources",
     "build_cnyes_category_rules",
-    "build_mops_lookup_rule",
     "build_stock_source_rules",
     "build_taiwan_stock_news_url",
     "build_taiwan_stock_news_urls",

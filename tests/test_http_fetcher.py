@@ -137,9 +137,6 @@ class HttpFetcherTests(unittest.TestCase):
             mocked_http.call_args.kwargs["urls"],
             [
                 "https://tw.stock.yahoo.com/quote/2330.TW/news",
-                "https://news.cnyes.com/news/cat/tw_quo",
-                "https://news.cnyes.com/news/cat/stock_report",
-                "https://news.cnyes.com/news/cat/tw_revenue",
                 "https://news.cnyes.com/news/cat/wd_stock",
             ],
         )
@@ -364,9 +361,6 @@ class HttpFetcherTests(unittest.TestCase):
         self.assertEqual(
             mocked_http.call_args.kwargs["urls"],
             [
-                "https://news.cnyes.com/news/cat/tw_quo",
-                "https://news.cnyes.com/news/cat/stock_report",
-                "https://news.cnyes.com/news/cat/tw_revenue",
                 "https://news.cnyes.com/news/cat/wd_stock",
             ],
         )
