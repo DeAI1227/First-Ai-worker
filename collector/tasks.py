@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collector.config.tracking_universe import build_batch_task
 from collector.task_batches import all_daily_tasks, generate_batch_tasks
-from collector.sources.entrypoints import build_cnyes_category_rules, build_stock_source_rules
+from collector.sources.entrypoints import build_stock_source_rules
 
 
 def make_task(
@@ -55,26 +55,17 @@ def extra_source_rules(
     search_keywords: list[str] | None = None,
 ) -> list[dict]:
     if scope == "macro":
-        return build_cnyes_category_rules("macro", scope_name)
+        return []
     if scope == "industry":
         if stock_code:
-            return [
-                *build_stock_source_rules(stock_code, stock_name),
-                *build_cnyes_category_rules("stock", scope_name),
-            ]
-        return build_cnyes_category_rules("stock", scope_name)
+            return build_stock_source_rules(stock_code, stock_name)
+        return []
     if scope == "stock":
         if stock_code:
-            return [
-                *build_stock_source_rules(stock_code, stock_name),
-                *build_cnyes_category_rules("stock", stock_name or scope_name),
-            ]
+            return build_stock_source_rules(stock_code, stock_name or scope_name)
     if scope in {"institution", "institution_watch"}:
         if stock_code:
-            return [
-                *build_stock_source_rules(stock_code, stock_name),
-                *build_cnyes_category_rules("institution", stock_name or scope_name),
-            ]
+            return build_stock_source_rules(stock_code, stock_name or scope_name)
     return []
 
 

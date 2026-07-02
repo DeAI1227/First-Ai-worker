@@ -40,18 +40,17 @@ PROHIBITED_TERMS = [
     "報酬率",
     "漲停",
     "飆股",
-    "喊單",
+    "投資建議",
+    "買賣建議",
     "技術分析",
     "K線",
     "成交量",
-    "買賣建議",
-    "投資建議",
 ]
 
 SCOPE_DIR_NAMES = {
     "macro": "大環境",
     "industry": "產業",
-    "stock": "個股",
+    "stock": "股票",
     "institution": "大行關注",
     "institution_watch": "大行關注",
 }
@@ -60,3 +59,4 @@ MACRO_TOPICS = [item["key"] for item in TRACKING_MACRO_TOPICS]
 
 DEFAULT_LANGUAGE = "zh-TW"
 COLLECTOR_NAME = "langgraph"
+EVENT_AI_SUMMARY_MAX_CHARS = 1500

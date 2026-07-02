@@ -4,7 +4,7 @@ import json
 import re
 from typing import Any
 
-from collector.constants import DEFAULT_LANGUAGE
+from collector.constants import DEFAULT_LANGUAGE, EVENT_AI_SUMMARY_MAX_CHARS
 from collector.summarizers.base import (
     build_topic_tags,
     clamp_and_sanitize,
@@ -17,20 +17,23 @@ from collector.summarizers.base import (
 from collector.summarizers.mock_summarizer import summarize_with_mock
 from collector.summarizers.providers import AgnesProvider, GeminiProvider
 
-LLM_SUMMARIZATION_PROMPT = """你是一個投資研究摘要助手 (AI summary assistant)。
-請根據 raw_sources 產出繁體中文 JSON，且只能輸出以下欄位：
+LLM_SUMMARIZATION_PROMPT = """你是一個投資研究摘要助手（AI summary assistant）。
+你的任務是根據 raw_sources 整理成一份整合後的研究摘要，而不是逐篇重寫。
+
+請只輸出 JSON，且欄位必須只有：
 - ai_summary
 - possible_impact
 - risk_note
 - tags
 
 規則：
-1. 不要輸出 markdown、不要輸出多餘解釋。
-2. ai_summary 必須在 500 字內。
-3. possible_impact 只描述可能影響，不要做買賣建議。
-4. risk_note 必須保留不確定性。
-5. tags 需提供 3 到 8 個關鍵詞。
-6. 不要出現「買進、賣出、目標價、報酬率、飆股、漲停、喊單、投資建議」等詞。
+1. 不要輸出 markdown 或額外說明。
+2. ai_summary 必須在 1500 字以內。
+3. ai_summary 需整合多篇來源，形成單一研究簡報。
+4. possible_impact 只描述可能影響，不要做買賣建議。
+5. risk_note 必須保留不確定性與限制。
+6. tags 請提供 3 到 8 個關鍵詞。
+7. 內容要用繁體中文，語氣客觀、精簡、可直接放進研究終端。
 """
 
 SUPPORTED_LLM_PROVIDERS = {"auto", "agnes", "gemini", "mock"}
@@ -77,14 +80,14 @@ def build_llm_prompt(state: dict[str, Any], sources: list[dict[str, Any]]) -> st
 
     return (
         f"{LLM_SUMMARIZATION_PROMPT}\n\n"
-        f"任務資訊:\n"
+        f"任務上下文:\n"
         f"- scope: {scope}\n"
         f"- scope_name: {scope_name}\n"
         f"- target_stock_code: {stock_code}\n"
         f"- target_stock_name: {stock_name}\n"
         f"- search_keywords: {keywords}\n\n"
-        f"來源總覽:\n{overview}\n\n"
-        f"raw_sources 範例:\n{source_lines or '(none)'}\n"
+        f"來源摘要:\n{overview}\n\n"
+        f"raw_sources 預覽:\n{source_lines or '(none)'}\n"
     )
 
 
@@ -166,12 +169,18 @@ def _normalize_summary_payload(
 ) -> dict[str, Any]:
     mock_result = summarize_with_mock(state, sources)
 
-    ai_summary = clamp_and_sanitize(_as_text(payload.get("ai_summary", "")) or mock_result["ai_summary"], 500)
+    ai_summary = clamp_and_sanitize(
+        _as_text(payload.get("ai_summary", "")) or mock_result["ai_summary"],
+        EVENT_AI_SUMMARY_MAX_CHARS,
+    )
     possible_impact = clamp_and_sanitize(
         _as_text(payload.get("possible_impact", "")) or mock_result["possible_impact"],
-        500,
+        EVENT_AI_SUMMARY_MAX_CHARS,
     )
-    risk_note = clamp_and_sanitize(_as_text(payload.get("risk_note", "")) or mock_result["risk_note"], 500)
+    risk_note = clamp_and_sanitize(
+        _as_text(payload.get("risk_note", "")) or mock_result["risk_note"],
+        EVENT_AI_SUMMARY_MAX_CHARS,
+    )
 
     tags = _normalize_tags(payload.get("tags"))
     if len(tags) < 3:
@@ -200,7 +209,7 @@ def _normalize_tags(value: Any) -> list[str]:
     if isinstance(value, list):
         tags = [sanitize_text(clean_text(item)) for item in value if sanitize_text(clean_text(item))]
     elif isinstance(value, str):
-        parts = re.split(r"[,\n|、]+", value)
+        parts = re.split(r"[,\n|;，。]+", value)
         tags = [sanitize_text(clean_text(item)) for item in parts if sanitize_text(clean_text(item))]
     else:
         tags = []

@@ -25,7 +25,7 @@ def join_non_empty(parts: Iterable[str], separator: str = " ") -> str:
     return separator.join(part for part in parts if clean_text(part))
 
 
-def clamp_and_sanitize(value: str, max_chars: int = 500) -> str:
+def clamp_and_sanitize(value: str, max_chars: int = 1500) -> str:
     return clamp_text(sanitize_text(value), max_chars)
 
 
