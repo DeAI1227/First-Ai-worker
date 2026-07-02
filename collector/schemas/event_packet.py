@@ -5,6 +5,7 @@ from typing import Any
 from collector.constants import (
     COLLECTOR_NAME,
     DEFAULT_LANGUAGE,
+    EVENT_AI_SUMMARY_MAX_CHARS,
     VALID_EVENT_TYPES,
     VALID_IMPORTANCE,
     VALID_INDUSTRIES,
@@ -53,8 +54,8 @@ def validate_event_packet(packet: dict[str, Any]) -> list[str]:
         errors.append("language must be zh-TW")
     if not packet.get("source_url"):
         errors.append("source_url is required")
-    if len(packet.get("ai_summary", "")) > 500:
-        errors.append("ai_summary must be <= 500 chars")
+    if len(packet.get("ai_summary", "")) > EVENT_AI_SUMMARY_MAX_CHARS:
+        errors.append(f"ai_summary must be <= {EVENT_AI_SUMMARY_MAX_CHARS} chars")
     if packet.get("event_type") not in VALID_EVENT_TYPES:
         errors.append("event_type is invalid")
     if packet.get("importance") not in VALID_IMPORTANCE:

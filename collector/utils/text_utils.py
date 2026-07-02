@@ -3,7 +3,7 @@ from __future__ import annotations
 from collector.constants import PROHIBITED_TERMS
 
 
-def clamp_text(text: str, max_chars: int = 500) -> str:
+def clamp_text(text: str, max_chars: int = 1500) -> str:
     normalized = " ".join((text or "").split())
     return normalized[:max_chars]
 

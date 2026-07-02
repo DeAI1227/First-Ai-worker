@@ -70,6 +70,11 @@ def _score_single_source(
     source_name = clean_text(normalized.get("source_name", ""))
     source_type = clean_text(normalized.get("source_type", "")).lower()
     combined_text = f"{title} {content} {source_name}"
+    stock_hint_match = _contains_any(combined_text, stock_hints)
+    relaxed_stock_filtering = _should_relax_stock_filters(
+        scope=scope,
+        stock_hint_match=stock_hint_match,
+    )
 
     reasons: list[str] = []
     score = 0
@@ -115,7 +120,7 @@ def _score_single_source(
         score += 10
         reasons.append("matches topic keywords")
 
-    if _contains_any(combined_text, stock_hints):
+    if stock_hint_match:
         score += 10
         reasons.append("matches stock/company hints")
     elif _scope_requires_target_stock_match(scope) and stock_hints:
@@ -127,15 +132,15 @@ def _score_single_source(
         reasons.append("contains research terms")
 
     prohibited = is_prohibited_text(combined_text)
-    if prohibited:
+    if prohibited and not relaxed_stock_filtering:
         reasons.append("contains prohibited terms: " + ", ".join(sorted(set(prohibited))))
         rejected = True
 
-    if is_suspicious_signal(combined_text):
+    if is_suspicious_signal(combined_text) and not relaxed_stock_filtering:
         reasons.append("suspicious buy/sell or price-target style content")
         rejected = True
 
-    if is_quote_style_bulletin(combined_text):
+    if is_quote_style_bulletin(combined_text) and not relaxed_stock_filtering:
         reasons.append("contains stock price bulletin / quote-style content")
         rejected = True
 
@@ -201,6 +206,12 @@ def _is_official_source(source_name: str, source_url: str, source_type: str) -> 
         return True
     text = f"{source_name} {source_url}".lower()
     return any(term in text for term in OFFICIAL_SOURCE_TERMS)
+
+
+def _should_relax_stock_filters(*, scope: str, stock_hint_match: bool) -> bool:
+    if not stock_hint_match:
+        return False
+    return clean_text(scope).lower() in {"stock", "institution", "institution_watch"}
 
 
 def _contains_any(text: str, terms: Iterable[str]) -> bool:

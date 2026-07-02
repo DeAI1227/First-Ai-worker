@@ -15,11 +15,10 @@ QUALITY_PROHIBITED_TERMS = [
     "報酬率",
     "漲停",
     "飆股",
-    "喊單",
-    "買賣建議",
     "投資建議",
+    "買賣建議",
     "技術分析",
-    "k線",
+    "K線",
     "成交量",
 ]
 
@@ -38,13 +37,11 @@ RESEARCH_TERMS = [
     "research",
     "研究",
     "產業",
-    "供應鏈",
-    "政策",
-    "法說",
-    "公告",
-    "資料中心",
+    "分析",
     "財報",
-    "營收",
+    "報告",
+    "評論",
+    "觀察",
     "execution",
 ]
 
@@ -56,32 +53,25 @@ OFFICIAL_SOURCE_TERMS = [
     "company",
     "press release",
     "announcement",
-    "公開資訊觀測站",
-    "證交所",
-    "櫃買中心",
-    "經濟部",
+    "yahoo",
     "reuters",
     "bloomberg",
 ]
 
 QUOTE_BULLETIN_TERMS = [
-    "盤中速報",
+    "即時報價",
+    "走勢",
+    "漲跌",
+    "成交",
+    "台股",
+    "個股報價",
     "股價",
-    "報價",
-    "漲幅",
-    "跌幅",
-    "收盤",
-    "開盤",
-    "盤中",
-    "大漲",
-    "大跌",
 ]
 
 QUOTE_BULLETIN_PATTERNS = [
-    re.compile(r"報\s*\d+(?:\.\d+)?\s*元"),
+    re.compile(r"^\s*\d+(?:\.\d+)?\s*%"),
     re.compile(r"\d+(?:\.\d+)?\s*%"),
-    re.compile(r"漲\d+(?:\.\d+)?%"),
-    re.compile(r"跌\d+(?:\.\d+)?%"),
+    re.compile(r"^\s*[+-]?\d+(?:\.\d+)?\s*$"),
 ]
 
 

@@ -10,19 +10,19 @@ class SourceFilterTests(unittest.TestCase):
         state = {
             "raw_sources": [
                 {
-                    "title": "AI 伺服器散熱需求升溫",
+                    "title": "??????",
                     "source_name": "RSS A",
                     "source_url": "https://example.com/a",
                     "published_at": "",
-                    "content": "散熱內容",
+                    "content": "???????",
                     "source_type": "rss",
                 },
                 {
-                    "title": "AI 伺服器散熱需求升溫",
+                    "title": "??????",
                     "source_name": "RSS A",
                     "source_url": "https://example.com/a",
                     "published_at": "",
-                    "content": "散熱內容",
+                    "content": "???????",
                     "source_type": "rss",
                 },
             ]
@@ -34,11 +34,11 @@ class SourceFilterTests(unittest.TestCase):
         state = {
             "raw_sources": [
                 {
-                    "title": "飆股喊單",
+                    "title": "買進建議",
                     "source_name": "Bad Feed",
                     "source_url": "https://example.com/bad",
                     "published_at": "",
-                    "content": "買進 目標價 漲停",
+                    "content": "法人建議買進，並給出目標價與報酬率。",
                     "source_type": "rss",
                 }
             ]
@@ -46,19 +46,17 @@ class SourceFilterTests(unittest.TestCase):
         filtered_state = filter_sources(state)
         self.assertEqual(filtered_state["filtered_sources"], [])
 
-    def test_filter_sources_blocks_quote_style_bulletins(self):
+    def test_filter_sources_blocks_quote_style_bulletins_without_stock_context(self):
         state = {
-            "scope": "industry",
-            "scope_name": "散熱",
-            "target_stock_code": "6230",
-            "target_stock_name": "尼得科超眾",
+            "scope": "macro",
+            "scope_name": "???",
             "raw_sources": [
                 {
-                    "title": "盤中速報- 尼得科超眾(6230)大漲7.01%，報168元",
-                    "source_name": "Yahoo股市",
+                    "title": "?????? 2330 ?? 7.01%",
+                    "source_name": "Yahoo Finance",
                     "source_url": "https://example.com/quote-bulletin",
                     "published_at": "2026-06-25T10:00:00+08:00",
-                    "content": "盤中股價快速上漲，最新報價168元，漲幅7.01%。",
+                    "content": "????????????????????????????",
                     "source_type": "search",
                 }
             ],
@@ -66,12 +64,33 @@ class SourceFilterTests(unittest.TestCase):
         filtered_state = filter_sources(state)
         self.assertEqual(filtered_state["filtered_sources"], [])
 
+    def test_filter_sources_allows_yahoo_stock_articles_that_mention_target_stock(self):
+        state = {
+            "scope": "stock",
+            "scope_name": "???",
+            "target_stock_code": "2330",
+            "target_stock_name": "???",
+            "raw_sources": [
+                {
+                    "title": "台積電最新動態",
+                    "source_name": "Yahoo News",
+                    "source_url": "https://tw.stock.yahoo.com/news/tsmc-expansion-1.html",
+                    "published_at": "2026-06-24T08:00:00+08:00",
+                    "content": "這篇正文提到 2330 台積電 的擴產與供應鏈調整。",
+                    "source_type": "http",
+                }
+            ],
+        }
+        filtered_state = filter_sources(state)
+        self.assertEqual(len(filtered_state["filtered_sources"]), 1)
+        self.assertEqual(filtered_state["filtered_sources"][0]["source_url"], "https://tw.stock.yahoo.com/news/tsmc-expansion-1.html")
+
     def test_filter_sources_blocks_stock_scope_articles_without_target_match(self):
         state = {
             "scope": "stock",
-            "scope_name": "?????",
-            "target_stock_code": "6230",
-            "target_stock_name": "?????",
+            "scope_name": "???",
+            "target_stock_code": "2330",
+            "target_stock_name": "???",
             "raw_sources": [
                 {
                     "title": "AI thermal supply chain update",

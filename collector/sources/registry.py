@@ -118,7 +118,7 @@ def _resolve_http_urls_from_source_rules(state: dict) -> list[str]:
     for rule in source_rules:
         if not isinstance(rule, dict):
             continue
-        if clean_text(rule.get("kind", "")) not in {"yahoo_stock_news", "cnyes_category_news"}:
+        if clean_text(rule.get("kind", "")) != "yahoo_stock_news":
             continue
         url = clean_text(rule.get("url", ""))
         if not url or url in seen:

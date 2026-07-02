@@ -102,7 +102,7 @@ class SummarizerTests(unittest.TestCase):
         self.assertTrue(result["possible_impact"])
         self.assertTrue(result["risk_note"])
         self.assertGreaterEqual(len(result["tags"]), 3)
-        self.assertLessEqual(len(result["ai_summary"]), 500)
+        self.assertLessEqual(len(result["ai_summary"]), 1500)
 
     def test_build_llm_prompt_contains_guardrails(self):
         state = {
@@ -131,7 +131,7 @@ class SummarizerTests(unittest.TestCase):
 
         self.assertEqual(result["language"], "zh-TW")
         self.assertTrue(any("AGNES_API_KEY or AGNES_API_URL/AGNES_BASE_URL is missing" in error for error in state["run_errors"]))
-        self.assertLessEqual(len(result["ai_summary"]), 500)
+        self.assertLessEqual(len(result["ai_summary"]), 1500)
 
     def test_auto_provider_without_key_falls_back_to_mock(self):
         state = {
@@ -145,7 +145,7 @@ class SummarizerTests(unittest.TestCase):
 
         self.assertEqual(result["language"], "zh-TW")
         self.assertTrue(any("fallback to mock summarizer" in error for error in state["run_errors"]))
-        self.assertLessEqual(len(result["ai_summary"]), 500)
+        self.assertLessEqual(len(result["ai_summary"]), 1500)
 
     def test_auto_provider_uses_agnes_when_only_agnes_key_exists(self):
         state = {
@@ -260,7 +260,7 @@ class SummarizerTests(unittest.TestCase):
             ):
                 result = summarize_with_llm(state, FAKE_SOURCES, provider="agnes")
 
-        self.assertLessEqual(len(result["ai_summary"]), 500)
+        self.assertLessEqual(len(result["ai_summary"]), 1500)
         self.assertNotIn("買進", result["ai_summary"])
         self.assertNotIn("賣出", result["possible_impact"])
         self.assertNotIn("目標價", result["risk_note"])
@@ -281,7 +281,7 @@ class SummarizerTests(unittest.TestCase):
 
         self.assertEqual(state["event_packet"]["packet_type"], "event")
         self.assertEqual(state["event_packet"]["collector"], "langgraph")
-        self.assertLessEqual(len(state["event_packet"]["ai_summary"]), 500)
+        self.assertLessEqual(len(state["event_packet"]["ai_summary"]), 1500)
         self.assertTrue(any("fallback to mock summarizer" in error for error in state["run_errors"]))
 
     def test_cli_summarizer_mode_llm_runs(self):

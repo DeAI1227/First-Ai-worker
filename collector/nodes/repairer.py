@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collector.constants import COLLECTOR_NAME, DEFAULT_LANGUAGE, VALID_INDUSTRIES, VALID_MVP_STOCKS
+from collector.constants import COLLECTOR_NAME, DEFAULT_LANGUAGE, EVENT_AI_SUMMARY_MAX_CHARS, VALID_INDUSTRIES, VALID_MVP_STOCKS
 from collector.utils.text_utils import clamp_text
 
 
@@ -11,7 +11,7 @@ def repair_event_packet(state: dict) -> dict:
     packet["packet_type"] = "event"
     packet["collector"] = COLLECTOR_NAME
     packet["language"] = DEFAULT_LANGUAGE
-    packet["ai_summary"] = clamp_text(packet.get("ai_summary", ""), 500)
+    packet["ai_summary"] = clamp_text(packet.get("ai_summary", ""), EVENT_AI_SUMMARY_MAX_CHARS)
     packet.setdefault("tags", [])
 
     industries = packet.get("related_industries") or []

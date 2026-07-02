@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -9,27 +9,20 @@ from collector.tracking_universe import resolve_tracking_source_key
 
 YAHOO_RSS_FEEDS: list[dict[str, str]] = [
     {
-        "source_name": "Yahoo 股市 RSS - 台股新聞",
+        "source_name": "Yahoo Stock RSS - Taiwan Market News",
         "feed_url": "https://tw.stock.yahoo.com/rss?category=tw-market",
     },
     {
-        "source_name": "Yahoo 股市 RSS - 新聞",
+        "source_name": "Yahoo Stock RSS - News",
         "feed_url": "https://tw.stock.yahoo.com/rss?category=news",
     },
     {
-        "source_name": "Yahoo 股市 RSS - 研究報告",
+        "source_name": "Yahoo Stock RSS - Research Reports",
         "feed_url": "https://tw.stock.yahoo.com/rss?category=research",
     },
     {
-        "source_name": "Yahoo 股市 RSS - 國際財經",
+        "source_name": "Yahoo Stock RSS - International Markets",
         "feed_url": "https://tw.stock.yahoo.com/rss?category=intl-markets",
-    },
-]
-
-CNYES_TW_STOCK_RSS_FEEDS: list[dict[str, str]] = [
-    {
-        "source_name": "鉅亨網 RSS - 盤勢新聞",
-        "feed_url": "https://news.cnyes.com/rss/v1/news/category/wd_stock",
     },
 ]
 
@@ -50,30 +43,20 @@ RSS_SOURCE_CONFIG: dict[str, list[dict[str, str]]] = {
     "robot": deepcopy(YAHOO_RSS_FEEDS),
     "cpo": deepcopy(YAHOO_RSS_FEEDS),
     "networking": deepcopy(YAHOO_RSS_FEEDS),
-    "stock": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
-    "institution": deepcopy(YAHOO_RSS_FEEDS) + deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
+    "stock": deepcopy(YAHOO_RSS_FEEDS),
+    "institution": deepcopy(YAHOO_RSS_FEEDS),
 }
 
 HTTP_SOURCE_CONFIG: dict[str, list[dict[str, str]]] = {
     "macro": [],
-    "thermal": [
-        {
-            "source_name": "鉅亨網盤勢新聞分類頁",
-            "url": "https://news.cnyes.com/news/cat/wd_stock",
-        },
-    ],
+    "thermal": [],
     "power": [],
     "autodrive": [],
     "robot": [],
     "cpo": [],
     "networking": [],
-    "stock": [
-        {
-            "source_name": "鉅亨網盤勢新聞分類頁",
-            "url": "https://news.cnyes.com/news/cat/wd_stock",
-        },
-    ],
-    "institution": deepcopy(CNYES_TW_STOCK_RSS_FEEDS),
+    "stock": [],
+    "institution": [],
 }
 
 SOURCE_MODE_PRIORITY = {

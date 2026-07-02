@@ -11,7 +11,7 @@ from collector.config.tracking_universe import (
     stock_industries_for_code,
     topic_keywords,
 )
-from collector.sources.entrypoints import build_cnyes_category_rules, build_stock_source_rules
+from collector.sources.entrypoints import build_stock_source_rules
 
 
 def all_macro_tasks(
@@ -36,7 +36,7 @@ def all_macro_tasks(
                 macro_topic_id=topic["topic_id"],
                 macro_topic_key=topic["topic_id"],
                 macro_topic_name=topic["topic_name"],
-                source_rules=build_cnyes_category_rules("macro", topic["topic_name"]),
+                source_rules=[],
             )
         )
     return tasks
@@ -54,7 +54,6 @@ def all_industry_tasks(
         sample_stock_code = industry.get("sample_stock_code", "")
         sample_stock_name = industry.get("sample_stock_name", "")
         source_rules = build_stock_source_rules(sample_stock_code, sample_stock_name) if sample_stock_code else []
-        source_rules.extend(build_cnyes_category_rules(industry["industry_id"], industry["industry_name"]))
         tasks.append(
             build_batch_task(
                 scope="industry",
@@ -99,10 +98,7 @@ def all_stock_tasks(
                 search_provider=search_provider,
                 search_keywords=[stock["stock_code"], stock["stock_name"], *industries],
                 industries=industries,
-                source_rules=[
-                    *build_stock_source_rules(stock["stock_code"], stock["stock_name"]),
-                    *build_cnyes_category_rules("stock", stock["stock_name"]),
-                ],
+                source_rules=build_stock_source_rules(stock["stock_code"], stock["stock_name"]),
             )
         )
     return tasks
@@ -120,7 +116,7 @@ def all_institution_watch_tasks(
         tasks.append(
             build_batch_task(
                 scope="institution_watch",
-                scope_name="大行關注",
+                scope_name="????",
                 stock_code=stock["stock_code"],
                 stock_name=stock["stock_name"],
                 run_mode="daily",
@@ -128,13 +124,10 @@ def all_institution_watch_tasks(
                 summarizer_mode=summarizer_mode,
                 llm_provider=llm_provider,
                 search_provider=search_provider,
-                search_keywords=[stock["stock_code"], stock["stock_name"], "大行關注"],
+                search_keywords=[stock["stock_code"], stock["stock_name"], "????"],
                 institution_watch_code=stock["stock_code"],
                 institution_watch_name=stock["stock_name"],
-                source_rules=[
-                    *build_stock_source_rules(stock["stock_code"], stock["stock_name"]),
-                    *build_cnyes_category_rules("institution", stock["stock_name"]),
-                ],
+                source_rules=build_stock_source_rules(stock["stock_code"], stock["stock_name"]),
             )
         )
     return tasks
